@@ -2,9 +2,277 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>clinamen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>답장 생성기 — 카톡·문자 AI 답장</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    header p {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #1a1a1a;
+      line-height: 1.6;
+    }
+
+    textarea:focus { border-color: #3b82f6; }
+
+    textarea::placeholder { color: #bbb; }
+
+    button.generate {
+      width: 100%;
+      margin-top: 14px;
+      padding: 14px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button.generate:hover { background: #2563eb; }
+    button.generate:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    .loading {
+      text-align: center;
+      padding: 20px 0;
+      color: #3b82f6;
+      font-size: 14px;
+      display: none;
+    }
+
+    .dot-flashing {
+      display: inline-block;
+      animation: blink 1.2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:.2} 50%{opacity:1} }
+
+    .results {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .reply-card {
+      background: #f8faff;
+      border: 1.5px solid #dbeafe;
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .reply-card .tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: #3b82f6;
+      background: #dbeafe;
+      border-radius: 20px;
+      padding: 2px 8px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .reply-card .text {
+      font-size: 15px;
+      color: #1a1a1a;
+      line-height: 1.65;
+    }
+
+    .reply-card .copy-btn {
+      margin-top: 10px;
+      width: 100%;
+      padding: 8px;
+      background: #fff;
+      border: 1.5px solid #dbeafe;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #3b82f6;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .reply-card .copy-btn:hover { background: #eff6ff; }
+    .reply-card .copy-btn.copied { color: #10b981; border-color: #a7f3d0; }
+
+    .error {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #fef2f2;
+      border: 1.5px solid #fecaca;
+      border-radius: 10px;
+      color: #dc2626;
+      font-size: 13px;
+      display: none;
+    }
+
+    footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
 </head>
 <body>
-  <h1>안녕</h1>
+
+  <header>
+    <h1>💬 AI 답장 생성기</h1>
+    <p>받은 메시지를 붙여넣으면 AI가 답장을 써드려요</p>
+  </header>
+
+  <div class="card">
+    <label for="msg">받은 메시지</label>
+    <textarea
+      id="msg"
+      placeholder="예: 야 오늘 저녁 같이 먹을래? 아니면 그냥 각자?&#10;&#10;또는 상황 설명: 상사가 갑자기 주말 출근 부탁함"
+    ></textarea>
+    <button class="generate" id="btn" onclick="generate()">답장 생성하기</button>
+    <div class="error" id="error"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px; display:none;" id="resultCard">
+    <div class="loading" id="loading">
+      <span class="dot-flashing">✦</span> AI가 답장을 생각하는 중...
+    </div>
+    <div class="results" id="results"></div>
+  </div>
+
+  <footer>AI가 생성한 내용은 참고용입니다</footer>
+
+  <script>
+    async function generate() {
+      const msg = document.getElementById('msg').value.trim();
+      const btn = document.getElementById('btn');
+      const error = document.getElementById('error');
+      const resultCard = document.getElementById('resultCard');
+      const loading = document.getElementById('loading');
+      const results = document.getElementById('results');
+
+      if (!msg) {
+        showError('메시지를 입력해주세요.');
+        return;
+      }
+
+      error.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = '생성 중...';
+      resultCard.style.display = 'block';
+      loading.style.display = 'block';
+      results.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || '오류가 발생했어요.');
+
+        loading.style.display = 'none';
+        renderReplies(data.replies);
+      } catch (e) {
+        loading.style.display = 'none';
+        resultCard.style.display = 'none';
+        showError(e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '답장 생성하기';
+      }
+    }
+
+    function renderReplies(replies) {
+      const results = document.getElementById('results');
+      const labels = ['옵션 1', '옵션 2', '옵션 3'];
+      results.innerHTML = replies.map((r, i) => `
+        <div class="reply-card">
+          <span class="tag">${labels[i] ?? `옵션 ${i+1}`}</span>
+          <div class="text">${escapeHtml(r)}</div>
+          <button class="copy-btn" onclick="copy(this, '${escapeAttr(r)}')">복사하기</button>
+        </div>
+      `).join('');
+    }
+
+    function copy(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✓ 복사됨';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = '복사하기';
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+    }
+
+    function escapeAttr(str) {
+      return str.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+    }
+  </script>
 </body>
 </html>

@@ -13,7 +13,8 @@
       "Bash(curl -sL https://github.com/cli/cli/releases/download/v2.71.0/gh_2.71.0_macOS_arm64.tar.gz -o /tmp/gh.tar.gz)",
       "Bash(tar -xzf /tmp/gh.tar.gz -C /tmp)",
       "Bash(cp /tmp/gh_2.71.0_macOS_arm64/bin/gh ~/bin/gh)",
-      "Bash(chmod +x ~/bin/gh)"
+      "Bash(chmod +x ~/bin/gh)",
+      "WebSearch"
     ]
   }
 }
