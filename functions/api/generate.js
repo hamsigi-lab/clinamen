@@ -11,7 +11,7 @@ export async function onRequestPost(context) {
     return json({ error: '메시지가 너무 길어요. 1000자 이내로 입력해주세요.' }, 400);
   }
 
-  const apiKey = env.ANTHROPIC_API_KEY;
+  const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) {
     return json({ error: '서버 설정 오류입니다.' }, 500);
   }
@@ -29,28 +29,26 @@ export async function onRequestPost(context) {
 
 {"replies": ["답장1", "답장2", "답장3"]}`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 512, temperature: 0.8 },
+      }),
+    }
+  );
 
   if (!response.ok) {
     const err = await response.text();
-    console.error('Anthropic API error:', err);
+    console.error('Gemini API error:', err);
     return json({ error: 'AI 호출 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.' }, 502);
   }
 
   const result = await response.json();
-  const text = result.content?.[0]?.text ?? '';
+  const text = result.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
   let replies;
   try {
