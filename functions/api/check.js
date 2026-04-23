@@ -174,9 +174,7 @@ async function handleRequest(context) {
   if (!response.ok) {
     const errText = await response.text();
     console.error('Gemini HTTP error:', response.status, errText.slice(0, 300));
-    return json({ error: response.status === 503
-      ? 'AI 서버가 일시적으로 혼잡합니다. 잠시 후 다시 시도해주세요.'
-      : 'AI 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }, 502);
+    return json({ error: `AI 오류 [${response.status}] — 잠시 후 다시 시도해주세요.` }, 502);
   }
 
   const result = await response.json();
@@ -216,30 +214,25 @@ async function handleRequest(context) {
   return json({ issues });
 }
 
-// 503 시 1회 재시도, 그래도 실패하면 gemini-2.0-flash 폴백
+// 503 시 다음 모델로 즉시 전환 (딜레이 없음 — Cloudflare 30초 제한 고려)
 async function callGemini(contents, apiKey) {
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
   const body = JSON.stringify({
     contents,
     generationConfig: { maxOutputTokens: 16384, temperature: 0.2 },
   });
 
+  let lastRes;
   for (const model of models) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
-      );
-      if (res.status !== 503) return res;
-      console.log(`${model} attempt ${attempt + 1} got 503`);
-    }
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+    );
+    console.log(`${model} → ${res.status}`);
+    if (res.status !== 503) return res;
+    lastRes = res;
   }
-  // 모든 시도 실패 시 마지막 응답 반환
-  return fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
-  );
+  return lastRes;
 }
 
 // 다중 전략으로 JSON 추출 — Gemini가 설명 텍스트를 앞뒤로 붙이는 경우에도 대응
