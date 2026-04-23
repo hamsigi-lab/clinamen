@@ -174,6 +174,22 @@ async function handleRequest(context) {
   if (!response.ok) {
     const errText = await response.text();
     console.error('Gemini HTTP error:', response.status, errText.slice(0, 300));
+
+    if (response.status === 429) {
+      let waitMsg = '1분 후 다시 시도해주세요.';
+      try {
+        const details = JSON.parse(errText)?.error?.details ?? [];
+        const retryDelay = details.find(d => d['@type']?.includes('RetryInfo'))?.retryDelay;
+        if (retryDelay) {
+          const sec = parseInt(retryDelay);
+          if (!isNaN(sec) && sec > 0) waitMsg = `${sec}초 후 다시 시도해주세요.`;
+        }
+      } catch(e) {}
+      return json({
+        error: `무료 API 요청 한도 초과 — ${waitMsg}\n(오늘 사용량이 많으면 내일 자동 초기화됩니다. 지속 문제 시 Google AI Studio에서 유료 플랜 활성화 필요)`,
+      }, 429);
+    }
+
     return json({ error: `AI 오류 [${response.status}] — 잠시 후 다시 시도해주세요.` }, 502);
   }
 
@@ -214,7 +230,7 @@ async function handleRequest(context) {
   return json({ issues });
 }
 
-// 503 시 다음 모델로 즉시 전환 (딜레이 없음 — Cloudflare 30초 제한 고려)
+// 503(서버 혼잡)만 다음 모델로 전환. 429(한도 초과)는 즉시 반환 — 키가 같으면 모델 바꿔도 소용없음
 async function callGemini(contents, apiKey) {
   const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
   const body = JSON.stringify({
@@ -229,7 +245,7 @@ async function callGemini(contents, apiKey) {
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
     );
     console.log(`${model} → ${res.status}`);
-    if (res.status !== 503) return res;
+    if (res.status !== 503) return res; // 429 포함 모든 비-503은 즉시 반환
     lastRes = res;
   }
   return lastRes;
