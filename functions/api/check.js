@@ -168,7 +168,7 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         contents,
         generationConfig: {
-          maxOutputTokens: 8192,
+          maxOutputTokens: 16384,
           temperature: 0.2,
           thinkingConfig: { thinkingBudget: 0 },
         },
@@ -200,13 +200,33 @@ export async function onRequestPost(context) {
       .replace(/```json\s*/gi, '')
       .replace(/```\s*/g, '')
       .trim();
-    const match = cleaned.match(/\{"issues"\s*:\s*\[[\s\S]*?\]\s*\}/);
-    if (!match) throw new Error('no json');
-    const parsed = JSON.parse(match[0]);
+
+    // greedy match — desc 필드 내 ] 문자에 걸리지 않도록
+    const match = cleaned.match(/\{"issues"\s*:\s*\[[\s\S]*\]\s*\}/);
+    let jsonStr = match?.[0];
+
+    // 출력이 잘린 경우 마지막 완전한 객체까지 복구 시도
+    if (!jsonStr) {
+      const start = cleaned.indexOf('{"issues"');
+      if (start !== -1) {
+        const fragment = cleaned.slice(start);
+        const lastObj = fragment.lastIndexOf('},{');
+        const candidate = lastObj !== -1
+          ? fragment.slice(0, lastObj + 1) + ']}'
+          : null;
+        if (candidate) {
+          try { jsonStr = candidate; JSON.parse(jsonStr); } catch(e) { jsonStr = null; }
+        }
+      }
+    }
+
+    if (!jsonStr) throw new Error('no json');
+    const parsed = JSON.parse(jsonStr);
     issues = parsed.issues ?? [];
     if (!Array.isArray(issues)) throw new Error('not array');
   } catch (e) {
-    console.error('Parse error:', e.message, '| raw:', raw.slice(0, 300));
+    const finishReason = result.candidates?.[0]?.finishReason ?? 'unknown';
+    console.error('Parse error:', e.message, '| finish:', finishReason, '| raw:', raw.slice(0, 500));
     return json({ error: 'AI 응답 처리 오류입니다. 다시 시도해주세요.' }, 500);
   }
 
