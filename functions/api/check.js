@@ -1,25 +1,64 @@
-const EXAM_IMAGE_PROMPT = (schoolType, subject, totalScore) => `
-당신은 ${schoolType || '학교'} ${subject || ''} 시험지 검토 전문가입니다.
-이 시험지 이미지를 꼼꼼히 분석하여 오류를 찾아주세요.
+const EXAM_PROMPT = (schoolType, subject, totalScore, itemTableText, scoringTableText, hasItemTableImg, hasScoringTableImg) => {
+  const docs = ['• 이미지 1: 시험지 원안'];
+  let imgIdx = 2;
+  if (hasItemTableImg) docs.push(`• 이미지 ${imgIdx++}: 문항정보표(이원목적분류표)`);
+  if (hasScoringTableImg) docs.push(`• 이미지 ${imgIdx++}: 서답형 채점기준표`);
+  if (itemTableText) docs.push('• 문항정보표 텍스트: 아래 [문항정보표 내용] 참조');
+  if (scoringTableText) docs.push('• 서답형 채점기준표 텍스트: 아래 [채점기준표 내용] 참조');
 
-검토 항목:
-1. 문항 번호 순서 오류 (빠진 번호, 중복 번호)
-2. 배점 합계가 총점(${totalScore || '미기재'})과 일치하는지
-3. 객관식 선지 형식 불일치
-4. 정답이 없거나 복수 정답 가능성
-5. 지문·보기의 맞춤법·문법 오류
-6. 문항 내 모순 또는 불명확한 표현
-7. 교육청 지침 위반 의심 사항
-8. 기타 출제 오류
+  return `당신은 낭주중학교 시험지 검토 전문가입니다. 2026학년도 낭주중학교 학업성적관리규정 기준으로 제공된 자료를 종합 검토해주세요.
 
-오류를 찾으면 이미지 내 해당 위치를 boundingBox로 표시해주세요.
-boundingBox는 이미지 크기를 1000x1000으로 가정했을 때의 좌표입니다.
+과목: ${subject || '미기재'} | 학교급: ${schoolType || '중학교'} | 총점: ${totalScore || '100점'}
+
+[검토 자료]
+${docs.join('\n')}
+
+[검토 기준 — 우선순위 순]
+
+1순위 오탈자·표현 오류 (최우선)
+- 맞춤법, 띄어쓰기, 문장부호 오류
+- 문법적으로 어색하거나 의미 불분명한 표현
+- 동일 문항 내 용어 불일치
+- 사실 오류 (연도, 인명, 지명, 수치)
+
+2순위 문항정보표 ↔ 시험지 대조 (문항정보표 제공 시 반드시 검토)
+- 문항별 배점 일치 여부
+- 내용영역·성취기준과 문항 내용 부합 여부
+- 난이도(상/중/하) 비율 규정 일치
+- 총 문항 수 일치
+- 성취기준 코드 형식 확인 (예: 9수01-01)
+
+3순위 서답형 배점·비율 (낭주중 학업성적관리규정)
+- 서답형 총 배점 ≥ 총점의 30%
+- 국어·사회(역사포함)·도덕·수학·과학·영어: 서술(논술)형 ≥ 총점의 20%
+- 채점기준표 완비 여부: 기본답안 + 인정답안 + 부분점수 기준 (채점기준표 제공 시)
+- 2점 이상 서답형 문항: 부분점수 기준 명시 여부
+
+4순위 형식·서식 오류
+- 부정형 발문(~아닌 것은, ~틀린 것은): bold + 밑줄 필수
+- 선택형·서답형 문항 번호 체계 분리 여부
+- 꼬리말 완비: 학년도·과목명·학년·학기·고사명·쪽수
+- 전체 배점 합계 = ${totalScore || '100'}점 여부
+- 문항 번호 연속성 (누락·중복 확인)
+
+5순위 출제 내용 적정성
+- 복수정답 가능성
+- 정답 없는 문항
+- 문항 간 단서 제공 (문항 간섭)
+- 선지 형식 극단적 불균형
+- 교육과정 범위 이탈 문항
+- 기출문제·참고서 전재 의심
+- 정치·종교적 편향 소재
+${itemTableText ? `\n[문항정보표 내용]\n---\n${itemTableText.slice(0, 25000)}\n---` : ''}
+${scoringTableText ? `\n[서답형 채점기준표 내용]\n---\n${scoringTableText.slice(0, 15000)}\n---` : ''}
 
 반드시 아래 JSON 형식으로만 응답하세요:
-{"issues": [{"level": "높음|중간|낮음|정보", "category": "카테고리", "title": "오류 제목", "desc": "상세 설명", "boundingBox": {"y_min": 0, "x_min": 0, "y_max": 100, "x_max": 1000}}]}
+{"issues": [{"level": "높음|중간|낮음|정보", "category": "카테고리명", "title": "오류 제목", "desc": "상세 설명 및 수정 방향", "boundingBox": {"y_min": 0, "x_min": 0, "y_max": 100, "x_max": 1000}}]}
 
-오류가 없으면: {"issues": []}
-`;
+boundingBox: 시험지 이미지(이미지 1)를 1000×1000 기준 좌표. 시험지 이미지와 무관한 항목(문항정보표 오류, 채점기준표 누락 등)은 "boundingBox": null.
+
+오류가 없으면: {"issues": []}`;
+};
 
 const RECORD_PROMPT = (text, schoolType, recordSection, checkMode) => `
 당신은 ${schoolType || '학교'} 학교생활기록부 기재 전문가입니다.
@@ -57,21 +96,34 @@ ${text.slice(0, 80000)}
 export async function onRequestPost(context) {
   const { request, env } = context;
   const body = await request.json();
-  const { type, mode, imageData, text, schoolType, subject, totalScore, recordSection, checkMode } = body;
+  const {
+    type, imageData, text,
+    schoolType, subject, totalScore,
+    recordSection, checkMode,
+    itemTableText, itemTableImage,
+    scoringTableText, scoringTableImage,
+  } = body;
 
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return json({ error: '서버 설정 오류입니다.' }, 500);
 
   let contents;
 
-  if (type === 'exam' && mode === 'image') {
-    if (!imageData) return json({ error: '이미지 데이터가 없습니다.' }, 400);
-    contents = [{
-      parts: [
-        { text: EXAM_IMAGE_PROMPT(schoolType, subject, totalScore) },
-        { inline_data: { mime_type: 'image/jpeg', data: imageData } },
-      ],
-    }];
+  if (type === 'exam') {
+    if (!imageData) return json({ error: '시험지 이미지가 없습니다.' }, 400);
+
+    const hasItemTableImg = !!itemTableImage;
+    const hasScoringTableImg = !!scoringTableImage;
+
+    const parts = [
+      { text: EXAM_PROMPT(schoolType, subject, totalScore, itemTableText, scoringTableText, hasItemTableImg, hasScoringTableImg) },
+      { inline_data: { mime_type: 'image/jpeg', data: imageData } },
+    ];
+    if (hasItemTableImg) parts.push({ inline_data: { mime_type: 'image/jpeg', data: itemTableImage } });
+    if (hasScoringTableImg) parts.push({ inline_data: { mime_type: 'image/jpeg', data: scoringTableImage } });
+
+    contents = [{ parts }];
+
   } else if (type === 'record') {
     if (!text?.trim()) return json({ error: '내용을 입력해주세요.' }, 400);
     if (text.length > 100000) return json({ error: '내용이 너무 깁니다.' }, 400);
@@ -87,7 +139,11 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents,
-        generationConfig: { maxOutputTokens: 4096, temperature: 0.2 },
+        generationConfig: {
+          maxOutputTokens: 8192,
+          temperature: 0.2,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     }
   );
@@ -99,7 +155,10 @@ export async function onRequestPost(context) {
 
   const result = await response.json();
   const parts = result.candidates?.[0]?.content?.parts ?? [];
-  const raw = parts.map(p => p.text ?? '').join('');
+  const raw = parts
+    .filter(p => !p.thought)
+    .map(p => p.text ?? '')
+    .join('');
 
   if (!raw) {
     console.error('Empty response:', JSON.stringify(result).slice(0, 300));
@@ -108,11 +167,14 @@ export async function onRequestPost(context) {
 
   let issues;
   try {
-    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start === -1 || end === -1) throw new Error('no json');
-    const parsed = JSON.parse(cleaned.slice(start, end + 1));
+    const cleaned = raw
+      .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .trim();
+    const match = cleaned.match(/\{"issues"\s*:\s*\[[\s\S]*?\]\s*\}/);
+    if (!match) throw new Error('no json');
+    const parsed = JSON.parse(match[0]);
     issues = parsed.issues ?? [];
     if (!Array.isArray(issues)) throw new Error('not array');
   } catch (e) {

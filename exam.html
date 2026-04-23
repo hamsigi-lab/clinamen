@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>시험지 오류 검사 — 선생님 도구</title>
+  <title>시험지 종합 검토 — 선생님 도구</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -51,7 +51,31 @@
     }
     select:focus, input[type=text]:focus { border-color: #2563eb; }
 
-    .analyze-btn { width: 100%; padding: 13px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    /* 보조 자료 섹션 */
+    .supp-label { font-size: 12px; font-weight: 600; color: #64748b; margin: 4px 0 6px; letter-spacing: 0.02em; }
+    .supp-section { border: 1.5px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
+    .supp-header { padding: 9px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #f8fafc; user-select: none; gap: 6px; }
+    .supp-header:hover { background: #f1f5f9; }
+    .supp-header-text { font-size: 12px; font-weight: 600; color: #374151; }
+    .supp-status { font-size: 11px; color: #94a3b8; margin-left: 3px; }
+    .supp-status.ok { color: #16a34a; font-weight: 700; }
+    .supp-toggle { font-size: 10px; color: #94a3b8; flex-shrink: 0; }
+    .supp-body { padding: 10px; border-top: 1px solid #f1f5f9; display: none; }
+    .supp-hint { font-size: 11px; color: #94a3b8; margin-bottom: 6px; line-height: 1.5; }
+    .supp-textarea {
+      width: 100%; min-height: 68px; border: 1.5px solid #e2e8f0; border-radius: 6px;
+      padding: 8px; font-size: 12px; font-family: inherit; resize: vertical;
+      outline: none; background: #fff; margin-bottom: 6px; line-height: 1.5;
+    }
+    .supp-textarea:focus { border-color: #2563eb; }
+    .supp-file-row { display: flex; align-items: center; gap: 6px; }
+    .supp-file-btn { padding: 5px 9px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; cursor: pointer; background: #fff; color: #475569; flex-shrink: 0; }
+    .supp-file-btn:hover { border-color: #7c3aed; color: #7c3aed; }
+    .supp-file-name { font-size: 11px; color: #64748b; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .supp-clear { padding: 1px 5px; border: none; background: none; color: #cbd5e1; cursor: pointer; font-size: 14px; flex-shrink: 0; display: none; }
+    .supp-clear:hover { color: #ef4444; }
+
+    .analyze-btn { width: 100%; padding: 13px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 4px; }
     .analyze-btn:hover { background: #1d4ed8; }
     .analyze-btn:disabled { background: #93c5fd; cursor: not-allowed; }
     .privacy-note { text-align: center; font-size: 11px; color: #22c55e; margin-top: 8px; }
@@ -98,14 +122,14 @@
 
 <header>
   <a href="/">← 홈</a>
-  <h1>📝 시험지 오류 검사</h1>
+  <h1>📝 시험지 종합 검토</h1>
 </header>
 
 <div class="main">
-  <!-- 왼쪽: 문서 -->
+  <!-- 왼쪽: 시험지 원안 -->
   <div class="doc-panel">
     <div class="doc-header">
-      <span class="doc-header-title" id="docTitle">문서를 업로드해주세요</span>
+      <span class="doc-header-title" id="docTitle">① 시험지 원안을 업로드해주세요</span>
       <div class="page-nav" id="pageNav">
         <button id="prevBtn" onclick="changePage(-1)" disabled>‹ 이전</button>
         <span class="page-info" id="pageInfo">1 / 1</span>
@@ -139,13 +163,57 @@
     <div class="settings-card">
       <h3>검사 설정</h3>
       <select id="schoolType">
-        <option value="">학교급 선택</option>
+        <option value="중학교" selected>중학교</option>
         <option value="초등학교">초등학교</option>
-        <option value="중학교">중학교</option>
         <option value="고등학교">고등학교</option>
       </select>
       <input type="text" id="subject" placeholder="과목 (예: 과학, 수학)">
       <input type="text" id="totalScore" placeholder="총점 (예: 100점)">
+
+      <div class="supp-label">보조 자료 첨부 (선택 · 첨부 시 정밀 검토)</div>
+
+      <!-- 문항정보표 -->
+      <div class="supp-section">
+        <div class="supp-header" onclick="toggleSupp('itemTable')">
+          <span class="supp-header-text">📊 문항정보표 <span class="supp-status" id="itemTableStatus">미첨부</span></span>
+          <span class="supp-toggle" id="itemTableToggle">▼</span>
+        </div>
+        <div class="supp-body" id="itemTableBody">
+          <p class="supp-hint">이원목적분류표를 텍스트로 붙여넣거나 이미지로 첨부하세요</p>
+          <textarea class="supp-textarea" id="itemTableText"
+            placeholder="문항번호·내용영역·성취기준·난이도·정답·배점..."
+            oninput="updateSuppStatus('itemTable')"></textarea>
+          <div class="supp-file-row">
+            <button class="supp-file-btn" onclick="document.getElementById('itemTableImg').click()">📷 이미지 첨부</button>
+            <span class="supp-file-name" id="itemTableImgName"></span>
+            <button class="supp-clear" id="itemTableClear" onclick="clearSupp('itemTable')">✕</button>
+          </div>
+          <input type="file" id="itemTableImg" accept="image/*" style="display:none"
+            onchange="handleSuppImage('itemTable', this.files[0])">
+        </div>
+      </div>
+
+      <!-- 서답형 채점기준표 -->
+      <div class="supp-section">
+        <div class="supp-header" onclick="toggleSupp('scoringTable')">
+          <span class="supp-header-text">📋 서답형 채점기준표 <span class="supp-status" id="scoringTableStatus">미첨부</span></span>
+          <span class="supp-toggle" id="scoringTableToggle">▼</span>
+        </div>
+        <div class="supp-body" id="scoringTableBody">
+          <p class="supp-hint">서답형 기본답안·인정답안·부분점수 기준을 붙여넣거나 이미지로 첨부하세요</p>
+          <textarea class="supp-textarea" id="scoringTableText"
+            placeholder="문항번호·기본답안·인정답안·부분점수 기준..."
+            oninput="updateSuppStatus('scoringTable')"></textarea>
+          <div class="supp-file-row">
+            <button class="supp-file-btn" onclick="document.getElementById('scoringTableImg').click()">📷 이미지 첨부</button>
+            <span class="supp-file-name" id="scoringTableImgName"></span>
+            <button class="supp-clear" id="scoringTableClear" onclick="clearSupp('scoringTable')">✕</button>
+          </div>
+          <input type="file" id="scoringTableImg" accept="image/*" style="display:none"
+            onchange="handleSuppImage('scoringTable', this.files[0])">
+        </div>
+      </div>
+
       <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>오류 검사 시작</button>
       <div class="privacy-note">🔒 파일은 서버에 저장되지 않습니다</div>
       <div class="error-banner" id="errorBanner"></div>
@@ -172,8 +240,10 @@
   let pdfDoc = null;
   let currentPage = 1;
   let totalPages = 1;
-  let pageImages = {}; // page -> base64
+  let pageImages = {};
   let currentIssues = [];
+  let itemTableImageData = null;
+  let scoringTableImageData = null;
 
   // 드래그 앤 드롭
   const zone = document.getElementById('uploadZone');
@@ -282,9 +352,53 @@
     document.getElementById('nextBtn').disabled = currentPage >= totalPages;
   }
 
+  // 보조 자료 섹션 토글
+  function toggleSupp(id) {
+    const body = document.getElementById(id + 'Body');
+    const toggle = document.getElementById(id + 'Toggle');
+    const isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    toggle.textContent = isOpen ? '▼' : '▲';
+  }
+
+  function updateSuppStatus(id) {
+    const text = document.getElementById(id + 'Text')?.value.trim();
+    const hasImg = id === 'itemTable' ? !!itemTableImageData : !!scoringTableImageData;
+    const hasContent = !!(text || hasImg);
+    const statusEl = document.getElementById(id + 'Status');
+    const clearBtn = document.getElementById(id + 'Clear');
+    statusEl.textContent = hasContent ? '✓ 첨부됨' : '미첨부';
+    statusEl.className = 'supp-status' + (hasContent ? ' ok' : '');
+    clearBtn.style.display = hasContent ? '' : 'none';
+  }
+
+  function handleSuppImage(id, file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target.result.split(',')[1];
+      if (id === 'itemTable') itemTableImageData = base64;
+      else scoringTableImageData = base64;
+      document.getElementById(id + 'ImgName').textContent = file.name;
+      updateSuppStatus(id);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearSupp(id) {
+    if (id === 'itemTable') itemTableImageData = null;
+    else scoringTableImageData = null;
+    const textEl = document.getElementById(id + 'Text');
+    if (textEl) textEl.value = '';
+    const imgInput = document.getElementById(id + 'Img');
+    if (imgInput) imgInput.value = '';
+    document.getElementById(id + 'ImgName').textContent = '';
+    updateSuppStatus(id);
+  }
+
   async function analyze() {
     const imageData = pageImages[currentPage];
-    if (!imageData) { showError('문서를 먼저 업로드해주세요.'); return; }
+    if (!imageData) { showError('시험지를 먼저 업로드해주세요.'); return; }
 
     const btn = document.getElementById('analyzeBtn');
     const resultCard = document.getElementById('resultCard');
@@ -300,17 +414,23 @@
     resultContent.innerHTML = '';
     clearOverlay();
 
+    const itemTableText = document.getElementById('itemTableText').value.trim();
+    const scoringTableText = document.getElementById('scoringTableText').value.trim();
+
     try {
       const res = await fetch('/api/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'exam',
-          mode: 'image',
           imageData,
           schoolType: document.getElementById('schoolType').value,
           subject: document.getElementById('subject').value,
           totalScore: document.getElementById('totalScore').value,
+          itemTableText: itemTableText || undefined,
+          itemTableImage: itemTableImageData || undefined,
+          scoringTableText: scoringTableText || undefined,
+          scoringTableImage: scoringTableImageData || undefined,
         }),
       });
       const data = await res.json();
@@ -347,16 +467,13 @@
       const h = ((bb.y_max - bb.y_min) / 1000) * overlay.height;
       const color = colors[issue.level] || '#3b82f6';
 
-      // 노란 음영
       ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
       ctx.fillRect(x, y, w, h);
 
-      // 테두리
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, w, h);
 
-      // 번호 뱃지
       const badgeSize = 20;
       ctx.fillStyle = color;
       ctx.beginPath();
@@ -380,7 +497,6 @@
     canvasWrap.scrollTo({ top: y - 60, behavior: 'smooth' });
     drawAnnotations(currentIssues);
 
-    // 강조 플래시
     const ctx = overlay.getContext('2d');
     const x = (bb.x_min / 1000) * overlay.width;
     const w = ((bb.x_max - bb.x_min) / 1000) * overlay.width;
