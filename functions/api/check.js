@@ -210,7 +210,7 @@ export async function onRequestPost(context) {
     if (!issues) throw new Error('no json');
   } catch (e) {
     console.error('Parse error | finish:', finishReason, '| raw[:600]:', raw.slice(0, 600));
-    return json({ error: 'AI 응답 처리 오류입니다. 다시 시도해주세요.' }, 500);
+    return json({ error: 'AI 응답 처리 오류입니다. 다시 시도해주세요.', _debug: { finish: finishReason, raw: raw.slice(0, 400) } }, 500);
   }
 
   return json({ issues });
