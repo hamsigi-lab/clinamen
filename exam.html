@@ -106,6 +106,7 @@
     .issue-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
     .issue-desc  { font-size: 12px; color: #475569; line-height: 1.5; }
     .issue-tag { font-size: 10px; color: #94a3b8; margin-bottom: 4px; }
+    .issue-quote { font-size: 11px; color: #64748b; font-style: italic; background: rgba(0,0,0,0.04); border-radius: 4px; padding: 3px 6px; margin-top: 5px; }
 
     .summary-row { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 8px; flex-wrap: wrap; }
     .chip { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
@@ -536,17 +537,25 @@
   }
 
   function drawCallout(ctx, issue, bx, by, bw, bh, color, W, H) {
-    const NW = 185, PAD = 8, TFS = 12, DFS = 10.5, LHT = 16, LHD = 14;
+    const NW = 185, PAD = 8, TFS = 12, DFS = 10.5, QFS = 10, LHT = 16, LHD = 14, LHQ = 13;
 
     ctx.font = `bold ${TFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
     const tLines = wrapCanvasText(ctx, issue.title || '', NW - PAD * 2 - 6);
 
     ctx.font = `${DFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
     const dAll = wrapCanvasText(ctx, issue.desc || '', NW - PAD * 2 - 6);
-    const dLines = dAll.slice(0, 3);
-    const hasMore = dAll.length > 3;
+    const dLines = dAll.slice(0, 2);
+    const hasMore = dAll.length > 2;
 
-    const NH = PAD + tLines.length * LHT + 5 + dLines.length * LHD + (hasMore ? LHD : 0) + PAD;
+    const qText = issue.quote ? `"${issue.quote}"` : null;
+    ctx.font = `italic ${QFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
+    const qLines = qText ? wrapCanvasText(ctx, qText, NW - PAD * 2 - 6).slice(0, 2) : [];
+
+    const NH = PAD
+      + tLines.length * LHT + 4
+      + dLines.length * LHD + (hasMore ? LHD : 0)
+      + (qLines.length ? 4 + qLines.length * LHQ : 0)
+      + PAD;
 
     // Position: right side, fall back to left if no space
     let nx = bx + bw + 10;
@@ -601,6 +610,17 @@
     if (hasMore) {
       ctx.fillStyle = '#94a3b8';
       ctx.fillText('↗ 오른쪽 패널에서 전체 확인', nx + PAD + 5, ty);
+      ty += LHD;
+    }
+
+    // Quote (원문 구절)
+    if (qLines.length) {
+      ty += 4;
+      ctx.fillStyle = 'rgba(0,0,0,0.06)';
+      ctx.fillRect(nx + PAD + 3, ty - 2, NW - PAD * 2 - 3, qLines.length * LHQ + 4);
+      ctx.font = `italic ${QFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
+      ctx.fillStyle = '#475569';
+      qLines.forEach(line => { ctx.fillText(line, nx + PAD + 6, ty); ty += LHQ; });
     }
   }
 
@@ -677,6 +697,7 @@
             <div class="issue-tag">${issue.category}</div>
             <div class="issue-title"><span class="issue-num">${i+1}</span>${escapeHtml(issue.title)}</div>
             <div class="issue-desc">${escapeHtml(issue.desc)}</div>
+            ${issue.quote ? `<div class="issue-quote">"${escapeHtml(issue.quote)}"</div>` : ''}
           </div>`).join('')}
       </div>`;
   }
