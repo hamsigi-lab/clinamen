@@ -169,30 +169,21 @@ async function handleRequest(context) {
     return json({ error: '잘못된 요청입니다.' }, 400);
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: { maxOutputTokens: 16384, temperature: 0.2 },
-      }),
-    }
-  );
+  const response = await callGemini(contents, apiKey);
 
   if (!response.ok) {
     const errText = await response.text();
     console.error('Gemini HTTP error:', response.status, errText.slice(0, 300));
-    return json({ error: `[${response.status}] ${errText.slice(0, 300)}` }, 502);
+    return json({ error: response.status === 503
+      ? 'AI 서버가 일시적으로 혼잡합니다. 잠시 후 다시 시도해주세요.'
+      : 'AI 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }, 502);
   }
 
   const result = await response.json();
 
   if (result.error) {
-    const msg = JSON.stringify(result.error).slice(0, 300);
-    console.error('Gemini API error:', msg);
-    return json({ error: `[API오류] ${msg}` }, 502);
+    console.error('Gemini API error:', JSON.stringify(result.error).slice(0, 300));
+    return json({ error: 'AI 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }, 502);
   }
 
   const finishReason = result.candidates?.[0]?.finishReason ?? 'UNKNOWN';
@@ -223,6 +214,32 @@ async function handleRequest(context) {
   }
 
   return json({ issues });
+}
+
+// 503 시 1회 재시도, 그래도 실패하면 gemini-2.0-flash 폴백
+async function callGemini(contents, apiKey) {
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const body = JSON.stringify({
+    contents,
+    generationConfig: { maxOutputTokens: 16384, temperature: 0.2 },
+  });
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 1500));
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+      );
+      if (res.status !== 503) return res;
+      console.log(`${model} attempt ${attempt + 1} got 503`);
+    }
+  }
+  // 모든 시도 실패 시 마지막 응답 반환
+  return fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+  );
 }
 
 // 다중 전략으로 JSON 추출 — Gemini가 설명 텍스트를 앞뒤로 붙이는 경우에도 대응
