@@ -490,41 +490,145 @@
     }
   }
 
+  const ANNOT_COLORS = { 높음: '#ef4444', 중간: '#f59e0b', 낮음: '#3b82f6', 정보: '#64748b' };
+  const ANNOT_FILLS  = { 높음: 'rgba(239,68,68,0.13)', 중간: 'rgba(245,158,11,0.13)', 낮음: 'rgba(59,130,246,0.13)', 정보: 'rgba(100,116,135,0.10)' };
+
   function drawAnnotations(issues) {
     const overlay = document.getElementById('overlayCanvas');
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, overlay.width, overlay.height);
-
-    const colors = { 높음: '#ef4444', '중간': '#f59e0b', 낮음: '#3b82f6', 정보: '#3b82f6' };
+    const W = overlay.width, H = overlay.height;
 
     issues.forEach((issue, i) => {
       const bb = issue.boundingBox;
       if (!bb) return;
+      const x = (bb.x_min / 1000) * W;
+      const y = (bb.y_min / 1000) * H;
+      const w = ((bb.x_max - bb.x_min) / 1000) * W;
+      const h = ((bb.y_max - bb.y_min) / 1000) * H;
+      const color = ANNOT_COLORS[issue.level] || '#3b82f6';
 
-      const x = (bb.x_min / 1000) * overlay.width;
-      const y = (bb.y_min / 1000) * overlay.height;
-      const w = ((bb.x_max - bb.x_min) / 1000) * overlay.width;
-      const h = ((bb.y_max - bb.y_min) / 1000) * overlay.height;
-      const color = colors[issue.level] || '#3b82f6';
-
-      ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
+      // Highlight fill
+      ctx.fillStyle = ANNOT_FILLS[issue.level] || 'rgba(59,130,246,0.13)';
       ctx.fillRect(x, y, w, h);
 
+      // Colored border
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, w, h);
 
-      const badgeSize = 20;
+      // Number badge
+      const br = 11;
+      const bx = x + br, by2 = Math.max(br, y - br);
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(x + badgeSize / 2, y - badgeSize / 2, badgeSize / 2, 0, Math.PI * 2);
+      ctx.arc(bx, by2, br, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.font = `bold ${badgeSize * 0.55}px sans-serif`;
+      ctx.font = 'bold 11px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(i + 1, x + badgeSize / 2, y - badgeSize / 2);
+      ctx.fillText(i + 1, bx, by2);
+
+      // Annotation note
+      drawCallout(ctx, issue, x, y, w, h, color, W, H);
     });
+  }
+
+  function drawCallout(ctx, issue, bx, by, bw, bh, color, W, H) {
+    const NW = 185, PAD = 8, TFS = 12, DFS = 10.5, LHT = 16, LHD = 14;
+
+    ctx.font = `bold ${TFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
+    const tLines = wrapCanvasText(ctx, issue.title || '', NW - PAD * 2 - 6);
+
+    ctx.font = `${DFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
+    const dAll = wrapCanvasText(ctx, issue.desc || '', NW - PAD * 2 - 6);
+    const dLines = dAll.slice(0, 3);
+    const hasMore = dAll.length > 3;
+
+    const NH = PAD + tLines.length * LHT + 5 + dLines.length * LHD + (hasMore ? LHD : 0) + PAD;
+
+    // Position: right side, fall back to left if no space
+    let nx = bx + bw + 10;
+    if (nx + NW > W - 4) nx = bx - NW - 10;
+    if (nx < 2) nx = 2;
+    let ny = by;
+    if (ny + NH > H - 4) ny = H - NH - 4;
+    if (ny < 2) ny = 2;
+
+    // Dashed connector line
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.45;
+    ctx.beginPath();
+    ctx.moveTo(bx + bw < nx ? bx + bw : bx, by + bh / 2);
+    ctx.lineTo(bx + bw < nx ? nx : nx + NW,  ny + NH / 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Drop shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.18)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+
+    // White background
+    ctx.fillStyle = '#fff';
+    roundRect(ctx, nx, ny, NW, NH, 6);
+    ctx.fill();
+    ctx.restore();
+
+    // Left accent bar
+    ctx.fillStyle = color;
+    roundRect(ctx, nx, ny, 4, NH, [6, 0, 0, 6]);
+    ctx.fill();
+
+    // Title
+    ctx.font = `bold ${TFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
+    ctx.fillStyle = '#1e293b';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    let ty = ny + PAD;
+    tLines.forEach(line => { ctx.fillText(line, nx + PAD + 5, ty); ty += LHT; });
+
+    // Desc
+    ty += 4;
+    ctx.font = `${DFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
+    ctx.fillStyle = '#64748b';
+    dLines.forEach(line => { ctx.fillText(line, nx + PAD + 5, ty); ty += LHD; });
+    if (hasMore) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('↗ 오른쪽 패널에서 전체 확인', nx + PAD + 5, ty);
+    }
+  }
+
+  function wrapCanvasText(ctx, text, maxW) {
+    const lines = [];
+    let cur = '';
+    for (const ch of text) {
+      const test = cur + ch;
+      if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = ch; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    const [tl, tr, br, bl] = typeof r === 'number' ? [r, r, r, r] : r;
+    ctx.beginPath();
+    ctx.moveTo(x + tl, y);
+    ctx.lineTo(x + w - tr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + tr);
+    ctx.lineTo(x + w, y + h - br);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
+    ctx.lineTo(x + bl, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - bl);
+    ctx.lineTo(x, y + tl);
+    ctx.quadraticCurveTo(x, y, x + tl, y);
+    ctx.closePath();
   }
 
   function highlightIssue(index) {
