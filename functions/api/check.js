@@ -1,24 +1,22 @@
-const EXAM_PROMPT = (text, schoolType, subject, totalScore) => `
-당신은 ${schoolType || '학교'} ${subject || ''}시험지 검토 전문가입니다.
-교육청 출제 지침에 따라 아래 시험지를 꼼꼼히 검토하고 오류를 찾아주세요.
+const EXAM_IMAGE_PROMPT = (schoolType, subject, totalScore) => `
+당신은 ${schoolType || '학교'} ${subject || ''} 시험지 검토 전문가입니다.
+이 시험지 이미지를 꼼꼼히 분석하여 오류를 찾아주세요.
 
 검토 항목:
 1. 문항 번호 순서 오류 (빠진 번호, 중복 번호)
-2. 배점 합계가 총점(${totalScore || '미입력'})과 일치하는지
-3. 객관식 선지 형식 불일치 (①②③ 혼용 등)
+2. 배점 합계가 총점(${totalScore || '미기재'})과 일치하는지
+3. 객관식 선지 형식 불일치
 4. 정답이 없거나 복수 정답 가능성
 5. 지문·보기의 맞춤법·문법 오류
 6. 문항 내 모순 또는 불명확한 표현
-7. 교육청 지침 위반 (시판 참고서 문항 복사, 전년도 문항 재출제 등 의심)
+7. 교육청 지침 위반 의심 사항
 8. 기타 출제 오류
 
-시험지 내용:
----
-${text.slice(0, 80000)}
----
+오류를 찾으면 이미지 내 해당 위치를 boundingBox로 표시해주세요.
+boundingBox는 이미지 크기를 1000x1000으로 가정했을 때의 좌표입니다.
 
-반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요:
-{"issues": [{"level": "높음|중간|낮음|정보", "category": "카테고리", "title": "오류 제목", "desc": "상세 설명"}]}
+반드시 아래 JSON 형식으로만 응답하세요:
+{"issues": [{"level": "높음|중간|낮음|정보", "category": "카테고리", "title": "오류 제목", "desc": "상세 설명", "boundingBox": {"y_min": 0, "x_min": 0, "y_max": 100, "x_max": 1000}}]}
 
 오류가 없으면: {"issues": []}
 `;
@@ -39,38 +37,48 @@ const RECORD_PROMPT = (text, schoolType, recordSection, checkMode) => `
 - 해외 어학연수·봉사활동 실적
 - 논문 투고·도서출간·지식재산권
 - 장학금·장학생 관련 내용
-- 학생이 재학한 고교를 알 수 있는 내용 (일부 항목 제외)
 
 추가 검토:
 - 과장되거나 검증 불가한 표현
 - 부정적·차별적 표현
 - 맞춤법·문법 오류
-- 항목과 관련 없는 내용 기재
 
-검토할 생활기록부 내용:
+검토할 내용:
 ---
 ${text.slice(0, 80000)}
 ---
 
 반드시 아래 JSON 형식으로만 응답하세요:
-{"issues": [{"level": "높음|중간|낮음|정보", "category": "카테고리", "title": "문제 제목", "desc": "상세 설명 및 수정 방향", "quote": "해당 원문 구절 (있는 경우)"}]}
+{"issues": [{"level": "높음|중간|낮음|정보", "category": "카테고리", "title": "문제 제목", "desc": "상세 설명 및 수정 방향", "quote": "해당 원문 구절"}]}
 
 오류가 없으면: {"issues": []}
 `;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const { type, text, schoolType, subject, totalScore, recordSection, checkMode } = await request.json();
-
-  if (!text?.trim()) return json({ error: '내용을 입력해주세요.' }, 400);
-  if (text.length > 100000) return json({ error: '내용이 너무 깁니다. 10만 자 이내로 입력해주세요.' }, 400);
+  const body = await request.json();
+  const { type, mode, imageData, text, schoolType, subject, totalScore, recordSection, checkMode } = body;
 
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return json({ error: '서버 설정 오류입니다.' }, 500);
 
-  const prompt = type === 'exam'
-    ? EXAM_PROMPT(text, schoolType, subject, totalScore)
-    : RECORD_PROMPT(text, schoolType, recordSection, checkMode);
+  let contents;
+
+  if (type === 'exam' && mode === 'image') {
+    if (!imageData) return json({ error: '이미지 데이터가 없습니다.' }, 400);
+    contents = [{
+      parts: [
+        { text: EXAM_IMAGE_PROMPT(schoolType, subject, totalScore) },
+        { inline_data: { mime_type: 'image/jpeg', data: imageData } },
+      ],
+    }];
+  } else if (type === 'record') {
+    if (!text?.trim()) return json({ error: '내용을 입력해주세요.' }, 400);
+    if (text.length > 100000) return json({ error: '내용이 너무 깁니다.' }, 400);
+    contents = [{ parts: [{ text: RECORD_PROMPT(text, schoolType, recordSection, checkMode) }] }];
+  } else {
+    return json({ error: '잘못된 요청입니다.' }, 400);
+  }
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -78,7 +86,7 @@ export async function onRequestPost(context) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents,
         generationConfig: { maxOutputTokens: 4096, temperature: 0.2 },
       }),
     }
@@ -90,29 +98,20 @@ export async function onRequestPost(context) {
   }
 
   const result = await response.json();
-
-  // 응답 구조 확인 (thinking 모드 대응)
   const parts = result.candidates?.[0]?.content?.parts ?? [];
   const raw = parts.map(p => p.text ?? '').join('');
 
   if (!raw) {
-    console.error('Empty Gemini response:', JSON.stringify(result));
+    console.error('Empty response:', JSON.stringify(result).slice(0, 300));
     return json({ error: 'AI 응답이 비어있습니다. 다시 시도해주세요.' }, 500);
   }
 
   let issues;
   try {
-    // 마크다운 코드블록 제거 후 JSON 추출
-    const cleaned = raw
-      .replace(/```json\s*/gi, '')
-      .replace(/```\s*/g, '')
-      .trim();
-
-    // 가장 바깥 JSON 객체 추출
+    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
     if (start === -1 || end === -1) throw new Error('no json');
-
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
     issues = parsed.issues ?? [];
     if (!Array.isArray(issues)) throw new Error('not array');

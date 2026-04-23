@@ -7,143 +7,91 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-      background: #f8fafc; color: #1a1a2e; min-height: 100vh;
-    }
-    header {
-      background: #fff; border-bottom: 1px solid #e2e8f0;
-      padding: 14px 24px; display: flex; align-items: center; gap: 12px;
-    }
+    body { font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+
+    header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
     header a { text-decoration: none; color: #64748b; font-size: 14px; }
-    header a:hover { color: #2563eb; }
-    header h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
-    .container { max-width: 760px; margin: 0 auto; padding: 32px 20px; }
-    .section-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-    .section-desc { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+    header h1 { font-size: 16px; font-weight: 700; }
 
-    .upload-area {
-      border: 2px dashed #cbd5e1; border-radius: 14px;
-      padding: 40px 24px; text-align: center;
-      background: #fff; cursor: pointer;
-      transition: all 0.2s; margin-bottom: 16px;
-    }
-    .upload-area:hover, .upload-area.dragover { border-color: #2563eb; background: #eff6ff; }
-    .upload-area .icon { font-size: 40px; margin-bottom: 12px; }
-    .upload-area p { font-size: 15px; color: #475569; margin-bottom: 6px; }
-    .upload-area span { font-size: 13px; color: #94a3b8; }
-    #fileInput { display: none; }
+    .main { max-width: 1200px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+    @media (max-width: 768px) { .main { grid-template-columns: 1fr; padding: 12px; } }
 
-    .or-divider {
-      text-align: center; color: #94a3b8; font-size: 13px;
-      margin: 16px 0; position: relative;
-    }
-    .or-divider::before, .or-divider::after {
-      content: ''; position: absolute; top: 50%;
-      width: 44%; height: 1px; background: #e2e8f0;
-    }
-    .or-divider::before { left: 0; }
-    .or-divider::after { right: 0; }
+    /* 왼쪽: 문서 영역 */
+    .doc-panel { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; }
+    .doc-header { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .doc-header-title { font-size: 14px; font-weight: 600; color: #475569; }
 
-    textarea {
-      width: 100%; min-height: 180px;
-      border: 1.5px solid #e2e8f0; border-radius: 10px;
-      padding: 14px; font-size: 14px; font-family: inherit;
-      resize: vertical; outline: none; transition: border-color 0.2s;
-      background: #fff;
-    }
-    textarea:focus { border-color: #2563eb; }
-    textarea::placeholder { color: #cbd5e1; }
+    .upload-zone { padding: 32px 20px; text-align: center; cursor: pointer; }
+    .upload-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .upload-btn { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; border: 2px solid; font-size: 14px; font-weight: 600; cursor: pointer; background: #fff; transition: all 0.15s; }
+    .upload-btn.primary { border-color: #2563eb; color: #2563eb; }
+    .upload-btn.primary:hover { background: #eff6ff; }
+    .upload-btn.camera { border-color: #7c3aed; color: #7c3aed; }
+    .upload-btn.camera:hover { background: #f5f3ff; }
+    .upload-hint { font-size: 13px; color: #94a3b8; }
 
-    .info-row {
-      display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
-    }
-    .info-row select, .info-row input {
-      flex: 1; min-width: 140px;
-      border: 1.5px solid #e2e8f0; border-radius: 8px;
-      padding: 10px 12px; font-size: 14px; font-family: inherit;
-      outline: none; background: #fff;
-    }
-    .info-row select:focus, .info-row input:focus { border-color: #2563eb; }
+    .page-nav { display: none; align-items: center; gap: 12px; }
+    .page-nav button { padding: 6px 14px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+    .page-nav button:hover:not(:disabled) { border-color: #2563eb; color: #2563eb; }
+    .page-nav button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .page-info { font-size: 13px; color: #64748b; white-space: nowrap; }
 
-    .btn-primary {
-      width: 100%; padding: 14px;
-      background: #2563eb; color: #fff;
-      border: none; border-radius: 10px;
-      font-size: 16px; font-weight: 700; cursor: pointer;
-      transition: background 0.2s; margin-top: 4px;
-    }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .canvas-wrap { position: relative; display: none; overflow: auto; max-height: 75vh; background: #64748b; }
+    #docCanvas { display: block; margin: 0 auto; max-width: 100%; }
+    #overlayCanvas { position: absolute; top: 0; left: 50%; transform: translateX(-50%); pointer-events: none; }
 
-    .privacy-note {
-      font-size: 12px; color: #22c55e;
-      text-align: center; margin-top: 10px;
-    }
+    /* 오른쪽: 설정 + 결과 */
+    .side-panel { display: flex; flex-direction: column; gap: 16px; }
 
-    .result-box {
-      margin-top: 28px; background: #fff;
-      border: 1px solid #e2e8f0; border-radius: 14px;
-      overflow: hidden; display: none;
+    .settings-card { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 16px; }
+    .settings-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    select, input[type=text] {
+      width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      font-size: 14px; font-family: inherit; outline: none; background: #fff; margin-bottom: 8px;
     }
-    .result-header {
-      padding: 16px 20px; background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .result-header h3 { font-size: 15px; font-weight: 700; }
-    .result-body { padding: 20px; }
+    select:focus, input[type=text]:focus { border-color: #2563eb; }
 
-    .issue-item {
-      padding: 14px 16px; border-radius: 10px;
-      margin-bottom: 10px; border-left: 4px solid;
-    }
+    .analyze-btn { width: 100%; padding: 13px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .analyze-btn:hover { background: #1d4ed8; }
+    .analyze-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+    .privacy-note { text-align: center; font-size: 11px; color: #22c55e; margin-top: 8px; }
+
+    .result-card { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; display: none; }
+    .result-card-header { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+    .result-card-header h3 { font-size: 14px; font-weight: 700; }
+    .copy-btn { padding: 5px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; cursor: pointer; background: #fff; }
+    .copy-btn:hover { border-color: #2563eb; color: #2563eb; }
+
+    .loading-state { padding: 28px 16px; text-align: center; }
+    .spinner { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-state p { font-size: 13px; color: #64748b; }
+
+    .issue-list { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .issue-item { border-radius: 10px; padding: 11px 13px; border-left: 3px solid; cursor: pointer; transition: opacity 0.15s; }
+    .issue-item:hover { opacity: 0.85; }
     .issue-high { background: #fef2f2; border-color: #ef4444; }
     .issue-mid  { background: #fffbeb; border-color: #f59e0b; }
     .issue-low  { background: #eff6ff; border-color: #3b82f6; }
-    .issue-ok   { background: #f0fdf4; border-color: #22c55e; }
 
-    .issue-label {
-      font-size: 11px; font-weight: 700;
-      padding: 2px 8px; border-radius: 20px;
-      display: inline-block; margin-bottom: 6px;
-    }
-    .issue-high .issue-label { background: #fee2e2; color: #dc2626; }
-    .issue-mid  .issue-label { background: #fef3c7; color: #d97706; }
-    .issue-low  .issue-label { background: #dbeafe; color: #2563eb; }
-    .issue-ok   .issue-label { background: #dcfce7; color: #16a34a; }
+    .issue-num { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 700; color: #fff; margin-right: 6px; vertical-align: middle; }
+    .issue-high .issue-num { background: #ef4444; }
+    .issue-mid  .issue-num { background: #f59e0b; }
+    .issue-low  .issue-num { background: #3b82f6; }
 
-    .issue-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-    .issue-desc  { font-size: 13px; color: #475569; line-height: 1.6; }
+    .issue-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .issue-desc  { font-size: 12px; color: #475569; line-height: 1.5; }
+    .issue-tag { font-size: 10px; color: #94a3b8; margin-bottom: 4px; }
 
-    .loading-msg {
-      text-align: center; padding: 32px;
-      color: #64748b; font-size: 14px; display: none;
-    }
-    .spinner {
-      width: 32px; height: 32px; border: 3px solid #e2e8f0;
-      border-top-color: #2563eb; border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 12px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .summary-row { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .chip-red   { background: #fee2e2; color: #dc2626; }
+    .chip-amber { background: #fef3c7; color: #d97706; }
+    .chip-blue  { background: #dbeafe; color: #2563eb; }
+    .chip-green { background: #dcfce7; color: #16a34a; }
 
-    .error-msg {
-      background: #fef2f2; border: 1px solid #fecaca;
-      border-radius: 10px; padding: 14px 16px;
-      color: #dc2626; font-size: 14px; margin-top: 16px; display: none;
-    }
-    .file-name {
-      font-size: 13px; color: #2563eb; background: #eff6ff;
-      border-radius: 6px; padding: 6px 12px;
-      margin-bottom: 12px; display: none;
-    }
-    .copy-btn {
-      padding: 6px 14px; background: #f8fafc;
-      border: 1px solid #e2e8f0; border-radius: 6px;
-      font-size: 12px; cursor: pointer; transition: all 0.15s;
-    }
-    .copy-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+    .no-issue { padding: 20px 16px; text-align: center; color: #22c55e; font-size: 14px; font-weight: 600; }
+    .error-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 14px; color: #dc2626; font-size: 13px; margin-top: 12px; display: none; }
   </style>
 </head>
 <body>
@@ -153,47 +101,67 @@
   <h1>📝 시험지 오류 검사</h1>
 </header>
 
-<div class="container">
-  <div class="section-title">시험지 오류 검사</div>
-  <div class="section-desc">PDF 업로드 또는 텍스트 붙여넣기 — 파일은 내 PC에서만 처리됩니다</div>
-
-  <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-    <div class="icon">📄</div>
-    <p>PDF 파일을 여기에 드래그하거나 클릭해서 선택</p>
-    <span>지원 형식: PDF · 최대 20MB</span>
-  </div>
-  <input type="file" id="fileInput" accept=".pdf" onchange="handleFile(this.files[0])">
-  <div class="file-name" id="fileName"></div>
-
-  <div class="or-divider">또는 직접 붙여넣기</div>
-
-  <textarea id="examText" placeholder="시험지 내용을 여기에 붙여넣으세요.&#10;&#10;예)&#10;1. 다음 중 광합성의 산물이 아닌 것은?&#10;① 포도당 ② 산소 ③ 이산화탄소 ④ 물 ⑤ ATP&#10;[배점: 3점]&#10;&#10;정답: ③"></textarea>
-
-  <div class="info-row" style="margin-top:14px;">
-    <select id="schoolType">
-      <option value="">학교급 선택</option>
-      <option value="초등학교">초등학교</option>
-      <option value="중학교">중학교</option>
-      <option value="고등학교">고등학교</option>
-    </select>
-    <input type="text" id="subject" placeholder="과목 (예: 과학, 수학)">
-    <input type="text" id="totalScore" placeholder="총점 (예: 100)">
-  </div>
-
-  <button class="btn-primary" id="checkBtn" onclick="checkExam()">오류 검사 시작</button>
-  <div class="privacy-note">🔒 파일은 서버에 저장되지 않습니다</div>
-  <div class="error-msg" id="errorMsg"></div>
-
-  <div class="result-box" id="resultBox">
-    <div class="result-header">
-      <h3>검사 결과</h3>
-      <button class="copy-btn" onclick="copyResult()">결과 복사</button>
+<div class="main">
+  <!-- 왼쪽: 문서 -->
+  <div class="doc-panel">
+    <div class="doc-header">
+      <span class="doc-header-title" id="docTitle">문서를 업로드해주세요</span>
+      <div class="page-nav" id="pageNav">
+        <button id="prevBtn" onclick="changePage(-1)" disabled>‹ 이전</button>
+        <span class="page-info" id="pageInfo">1 / 1</span>
+        <button id="nextBtn" onclick="changePage(1)" disabled>다음 ›</button>
+      </div>
     </div>
-    <div class="loading-msg" id="loadingMsg">
-      <div class="spinner"></div>
-      AI가 시험지를 검토하는 중입니다...
+
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-btns">
+        <button class="upload-btn primary" onclick="document.getElementById('fileInput').click()">
+          📄 파일 업로드
+        </button>
+        <button class="upload-btn camera" onclick="document.getElementById('cameraInput').click()">
+          📷 카메라 스캔
+        </button>
+      </div>
+      <p class="upload-hint">PDF · JPG · PNG 지원 · 드래그 앤 드롭 가능</p>
     </div>
-    <div class="result-body" id="resultBody"></div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="docCanvas"></canvas>
+      <canvas id="overlayCanvas"></canvas>
+    </div>
+
+    <input type="file" id="fileInput" accept=".pdf,image/*" style="display:none" onchange="handleFile(this.files[0])">
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(this.files[0])">
+  </div>
+
+  <!-- 오른쪽: 설정 + 결과 -->
+  <div class="side-panel">
+    <div class="settings-card">
+      <h3>검사 설정</h3>
+      <select id="schoolType">
+        <option value="">학교급 선택</option>
+        <option value="초등학교">초등학교</option>
+        <option value="중학교">중학교</option>
+        <option value="고등학교">고등학교</option>
+      </select>
+      <input type="text" id="subject" placeholder="과목 (예: 과학, 수학)">
+      <input type="text" id="totalScore" placeholder="총점 (예: 100점)">
+      <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>오류 검사 시작</button>
+      <div class="privacy-note">🔒 파일은 서버에 저장되지 않습니다</div>
+      <div class="error-banner" id="errorBanner"></div>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <div class="result-card-header">
+        <h3>검사 결과</h3>
+        <button class="copy-btn" onclick="copyResult()">결과 복사</button>
+      </div>
+      <div class="loading-state" id="loadingState" style="display:none">
+        <div class="spinner"></div>
+        <p>AI가 시험지를 분석하는 중입니다...</p>
+      </div>
+      <div id="resultContent"></div>
+    </div>
   </div>
 </div>
 
@@ -201,70 +169,160 @@
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  const uploadArea = document.getElementById('uploadArea');
-  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
-  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-  uploadArea.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadArea.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file?.type === 'application/pdf') handleFile(file);
+  let pdfDoc = null;
+  let currentPage = 1;
+  let totalPages = 1;
+  let pageImages = {}; // page -> base64
+  let currentIssues = [];
+
+  // 드래그 앤 드롭
+  const zone = document.getElementById('uploadZone');
+  const canvasWrap = document.getElementById('canvasWrap');
+  ['dragover','dragenter'].forEach(e => document.addEventListener(e, ev => { ev.preventDefault(); zone.style.borderColor = '#2563eb'; }));
+  document.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+  document.addEventListener('drop', ev => {
+    ev.preventDefault();
+    const file = ev.dataTransfer.files[0];
+    if (file) handleFile(file);
   });
 
   async function handleFile(file) {
     if (!file) return;
-    const fileNameEl = document.getElementById('fileName');
-    fileNameEl.textContent = `📄 ${file.name}`;
-    fileNameEl.style.display = 'block';
+    const errorBanner = document.getElementById('errorBanner');
+    errorBanner.style.display = 'none';
 
-    const reader = new FileReader();
-    reader.onload = async e => {
-      const typedArray = new Uint8Array(e.target.result);
-      const pdf = await pdfjsLib.getDocument(typedArray).promise;
-      let text = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(' ') + '\n';
-      }
-      document.getElementById('examText').value = text;
-    };
-    reader.readAsArrayBuffer(file);
+    document.getElementById('docTitle').textContent = file.name;
+    document.getElementById('uploadZone').style.display = 'none';
+    canvasWrap.style.display = 'block';
+
+    if (file.type === 'application/pdf') {
+      await loadPDF(file);
+    } else if (file.type.startsWith('image/')) {
+      await loadImage(file);
+    } else {
+      showError('PDF 또는 이미지 파일만 지원합니다.');
+    }
   }
 
-  async function checkExam() {
-    const text = document.getElementById('examText').value.trim();
-    const schoolType = document.getElementById('schoolType').value;
-    const subject = document.getElementById('subject').value.trim();
-    const totalScore = document.getElementById('totalScore').value.trim();
-    const btn = document.getElementById('checkBtn');
-    const errorMsg = document.getElementById('errorMsg');
-    const resultBox = document.getElementById('resultBox');
-    const loadingMsg = document.getElementById('loadingMsg');
-    const resultBody = document.getElementById('resultBody');
+  async function loadPDF(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    pdfDoc = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
+    totalPages = pdfDoc.numPages;
+    currentPage = 1;
+    pageImages = {};
 
-    if (!text) { showError('시험지 내용을 입력하거나 PDF를 업로드해주세요.'); return; }
+    if (totalPages > 1) {
+      document.getElementById('pageNav').style.display = 'flex';
+    }
+    await renderPage(currentPage);
+    document.getElementById('analyzeBtn').disabled = false;
+  }
 
-    errorMsg.style.display = 'none';
+  async function loadImage(file) {
+    pdfDoc = null;
+    totalPages = 1;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('docCanvas');
+      const maxW = canvasWrap.clientWidth || 700;
+      const scale = Math.min(1, maxW / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const overlay = document.getElementById('overlayCanvas');
+      overlay.width = canvas.width;
+      overlay.height = canvas.height;
+      overlay.style.width = canvas.width + 'px';
+      overlay.style.height = canvas.height + 'px';
+
+      pageImages[1] = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+      document.getElementById('analyzeBtn').disabled = false;
+    };
+    img.src = url;
+  }
+
+  async function renderPage(pageNum) {
+    const page = await pdfDoc.getPage(pageNum);
+    const maxW = canvasWrap.clientWidth || 700;
+    const unscaled = page.getViewport({ scale: 1 });
+    const scale = Math.min(2, maxW / unscaled.width);
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.getElementById('docCanvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    const overlay = document.getElementById('overlayCanvas');
+    overlay.width = canvas.width;
+    overlay.height = canvas.height;
+    overlay.style.width = canvas.width + 'px';
+    overlay.style.height = canvas.height + 'px';
+
+    pageImages[pageNum] = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    updatePageNav();
+    clearOverlay();
+    if (currentIssues.length) drawAnnotations(currentIssues);
+  }
+
+  function changePage(delta) {
+    const next = currentPage + delta;
+    if (next < 1 || next > totalPages) return;
+    currentPage = next;
+    renderPage(currentPage);
+  }
+
+  function updatePageNav() {
+    document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+    document.getElementById('prevBtn').disabled = currentPage <= 1;
+    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+  }
+
+  async function analyze() {
+    const imageData = pageImages[currentPage];
+    if (!imageData) { showError('문서를 먼저 업로드해주세요.'); return; }
+
+    const btn = document.getElementById('analyzeBtn');
+    const resultCard = document.getElementById('resultCard');
+    const loadingState = document.getElementById('loadingState');
+    const resultContent = document.getElementById('resultContent');
+    const errorBanner = document.getElementById('errorBanner');
+
+    errorBanner.style.display = 'none';
     btn.disabled = true;
-    btn.textContent = '검사 중...';
-    resultBox.style.display = 'block';
-    loadingMsg.style.display = 'block';
-    resultBody.innerHTML = '';
+    btn.textContent = '분석 중...';
+    resultCard.style.display = 'block';
+    loadingState.style.display = 'block';
+    resultContent.innerHTML = '';
+    clearOverlay();
 
     try {
       const res = await fetch('/api/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'exam', text, schoolType, subject, totalScore }),
+        body: JSON.stringify({
+          type: 'exam',
+          mode: 'image',
+          imageData,
+          schoolType: document.getElementById('schoolType').value,
+          subject: document.getElementById('subject').value,
+          totalScore: document.getElementById('totalScore').value,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '오류가 발생했습니다.');
-      loadingMsg.style.display = 'none';
-      renderResult(data.issues);
+
+      loadingState.style.display = 'none';
+      currentIssues = data.issues || [];
+      renderResult(currentIssues, resultContent);
+      drawAnnotations(currentIssues);
     } catch(e) {
-      loadingMsg.style.display = 'none';
-      resultBox.style.display = 'none';
+      loadingState.style.display = 'none';
+      resultCard.style.display = 'none';
       showError(e.message);
     } finally {
       btn.disabled = false;
@@ -272,39 +330,110 @@
     }
   }
 
-  function renderResult(issues) {
-    const body = document.getElementById('resultBody');
-    if (!issues?.length) {
-      body.innerHTML = '<div class="issue-item issue-ok"><span class="issue-label">✓ 이상 없음</span><div class="issue-title">검토 항목에서 오류가 발견되지 않았습니다.</div></div>';
+  function drawAnnotations(issues) {
+    const overlay = document.getElementById('overlayCanvas');
+    const ctx = overlay.getContext('2d');
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+    const colors = { 높음: '#ef4444', '중간': '#f59e0b', 낮음: '#3b82f6', 정보: '#3b82f6' };
+
+    issues.forEach((issue, i) => {
+      const bb = issue.boundingBox;
+      if (!bb) return;
+
+      const x = (bb.x_min / 1000) * overlay.width;
+      const y = (bb.y_min / 1000) * overlay.height;
+      const w = ((bb.x_max - bb.x_min) / 1000) * overlay.width;
+      const h = ((bb.y_max - bb.y_min) / 1000) * overlay.height;
+      const color = colors[issue.level] || '#3b82f6';
+
+      // 노란 음영
+      ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
+      ctx.fillRect(x, y, w, h);
+
+      // 테두리
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+
+      // 번호 뱃지
+      const badgeSize = 20;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x + badgeSize / 2, y - badgeSize / 2, badgeSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${badgeSize * 0.55}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(i + 1, x + badgeSize / 2, y - badgeSize / 2);
+    });
+  }
+
+  function highlightIssue(index) {
+    const issue = currentIssues[index];
+    if (!issue?.boundingBox) return;
+    const overlay = document.getElementById('overlayCanvas');
+    const canvasWrap = document.getElementById('canvasWrap');
+    const bb = issue.boundingBox;
+    const y = (bb.y_min / 1000) * overlay.height;
+    canvasWrap.scrollTo({ top: y - 60, behavior: 'smooth' });
+    drawAnnotations(currentIssues);
+
+    // 강조 플래시
+    const ctx = overlay.getContext('2d');
+    const x = (bb.x_min / 1000) * overlay.width;
+    const w = ((bb.x_max - bb.x_min) / 1000) * overlay.width;
+    const h = ((bb.y_max - bb.y_min) / 1000) * overlay.height;
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+    ctx.fillRect(x, y, w, h);
+    setTimeout(() => drawAnnotations(currentIssues), 600);
+  }
+
+  function clearOverlay() {
+    const overlay = document.getElementById('overlayCanvas');
+    overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+  }
+
+  function renderResult(issues, container) {
+    if (!issues.length) {
+      container.innerHTML = '<div class="no-issue">✅ 오류가 발견되지 않았습니다</div>';
       return;
     }
-    const levelMap = { 높음: 'high', '중간': 'mid', 낮음: 'low', 정보: 'low' };
-    body.innerHTML = issues.map(issue => {
-      const level = levelMap[issue.level] || 'low';
-      return `<div class="issue-item issue-${level}">
-        <span class="issue-label">${issue.level} · ${issue.category}</span>
-        <div class="issue-title">${escapeHtml(issue.title)}</div>
-        <div class="issue-desc">${escapeHtml(issue.desc)}</div>
+    const high  = issues.filter(i => i.level === '높음').length;
+    const mid   = issues.filter(i => i.level === '중간').length;
+    const low   = issues.filter(i => ['낮음','정보'].includes(i.level)).length;
+    const levelCls = { 높음: 'high', '중간': 'mid', 낮음: 'low', 정보: 'low' };
+
+    container.innerHTML =
+      `<div class="summary-row">
+        ${high ? `<span class="chip chip-red">⚠ 높음 ${high}</span>` : ''}
+        ${mid  ? `<span class="chip chip-amber">! 중간 ${mid}</span>` : ''}
+        ${low  ? `<span class="chip chip-blue">ℹ 참고 ${low}</span>` : ''}
+      </div>
+      <div class="issue-list">
+        ${issues.map((issue, i) => `
+          <div class="issue-item issue-${levelCls[issue.level]||'low'}" onclick="highlightIssue(${i})">
+            <div class="issue-tag">${issue.category}</div>
+            <div class="issue-title"><span class="issue-num">${i+1}</span>${escapeHtml(issue.title)}</div>
+            <div class="issue-desc">${escapeHtml(issue.desc)}</div>
+          </div>`).join('')}
       </div>`;
-    }).join('');
   }
 
   function copyResult() {
-    const issues = document.getElementById('resultBody').querySelectorAll('.issue-item');
-    const text = [...issues].map(el => {
-      const label = el.querySelector('.issue-label')?.textContent || '';
-      const title = el.querySelector('.issue-title')?.textContent || '';
-      const desc = el.querySelector('.issue-desc')?.textContent || '';
-      return `[${label}] ${title}\n${desc}`;
-    }).join('\n\n');
+    const text = currentIssues.map((issue, i) =>
+      `[${i+1}] ${issue.level} · ${issue.category}\n${issue.title}\n${issue.desc}`
+    ).join('\n\n');
     navigator.clipboard.writeText(text);
   }
 
   function showError(msg) {
-    const el = document.getElementById('errorMsg');
+    const el = document.getElementById('errorBanner');
     el.textContent = msg;
     el.style.display = 'block';
   }
+
   function escapeHtml(str) {
     return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
