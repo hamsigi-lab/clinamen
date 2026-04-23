@@ -90,15 +90,34 @@ export async function onRequestPost(context) {
   }
 
   const result = await response.json();
-  const raw = result.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+
+  // 응답 구조 확인 (thinking 모드 대응)
+  const parts = result.candidates?.[0]?.content?.parts ?? [];
+  const raw = parts.map(p => p.text ?? '').join('');
+
+  if (!raw) {
+    console.error('Empty Gemini response:', JSON.stringify(result));
+    return json({ error: 'AI 응답이 비어있습니다. 다시 시도해주세요.' }, 500);
+  }
 
   let issues;
   try {
-    const match = raw.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(match?.[0] ?? '{}');
+    // 마크다운 코드블록 제거 후 JSON 추출
+    const cleaned = raw
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .trim();
+
+    // 가장 바깥 JSON 객체 추출
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('no json');
+
+    const parsed = JSON.parse(cleaned.slice(start, end + 1));
     issues = parsed.issues ?? [];
-    if (!Array.isArray(issues)) throw new Error();
-  } catch {
+    if (!Array.isArray(issues)) throw new Error('not array');
+  } catch (e) {
+    console.error('Parse error:', e.message, '| raw:', raw.slice(0, 300));
     return json({ error: 'AI 응답 처리 오류입니다. 다시 시도해주세요.' }, 500);
   }
 
