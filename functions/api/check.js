@@ -14,7 +14,7 @@ const EXAM_PROMPT = (text, schoolType, subject, totalScore) => `
 
 시험지 내용:
 ---
-${text.slice(0, 4000)}
+${text.slice(0, 80000)}
 ---
 
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요:
@@ -49,7 +49,7 @@ const RECORD_PROMPT = (text, schoolType, recordSection, checkMode) => `
 
 검토할 생활기록부 내용:
 ---
-${text.slice(0, 4000)}
+${text.slice(0, 80000)}
 ---
 
 반드시 아래 JSON 형식으로만 응답하세요:
@@ -63,7 +63,7 @@ export async function onRequestPost(context) {
   const { type, text, schoolType, subject, totalScore, recordSection, checkMode } = await request.json();
 
   if (!text?.trim()) return json({ error: '내용을 입력해주세요.' }, 400);
-  if (text.length > 8000) return json({ error: '내용이 너무 깁니다. 8000자 이내로 입력해주세요.' }, 400);
+  if (text.length > 100000) return json({ error: '내용이 너무 깁니다. 10만 자 이내로 입력해주세요.' }, 400);
 
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) return json({ error: '서버 설정 오류입니다.' }, 500);
@@ -79,7 +79,7 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.2 },
       }),
     }
   );
