@@ -184,15 +184,16 @@ async function handleRequest(context) {
   if (!response.ok) {
     const errText = await response.text();
     console.error('Gemini HTTP error:', response.status, errText.slice(0, 300));
-    return json({ error: 'AI 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }, 502);
+    return json({ error: `Gemini ${response.status}: ${errText.slice(0, 200)}` }, 502);
   }
 
   const result = await response.json();
 
   // API 레벨 오류 (200 OK여도 error 필드가 있는 경우)
   if (result.error) {
-    console.error('Gemini API error:', JSON.stringify(result.error).slice(0, 300));
-    return json({ error: 'AI 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }, 502);
+    const msg = JSON.stringify(result.error).slice(0, 300);
+    console.error('Gemini API error:', msg);
+    return json({ error: `Gemini API 오류: ${msg}` }, 502);
   }
 
   const finishReason = result.candidates?.[0]?.finishReason ?? 'UNKNOWN';
