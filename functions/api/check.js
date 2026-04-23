@@ -167,21 +167,26 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents,
-        generationConfig: {
-          maxOutputTokens: 16384,
-          temperature: 0.2,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
+        generationConfig: { maxOutputTokens: 16384, temperature: 0.2 },
       }),
     }
   );
 
   if (!response.ok) {
-    console.error('Gemini error:', await response.text());
+    const errText = await response.text();
+    console.error('Gemini HTTP error:', response.status, errText.slice(0, 300));
     return json({ error: 'AI 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }, 502);
   }
 
   const result = await response.json();
+
+  // API 레벨 오류 (200 OK여도 error 필드가 있는 경우)
+  if (result.error) {
+    console.error('Gemini API error:', JSON.stringify(result.error).slice(0, 300));
+    return json({ error: 'AI 호출 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }, 502);
+  }
+
+  const finishReason = result.candidates?.[0]?.finishReason ?? 'UNKNOWN';
   const parts = result.candidates?.[0]?.content?.parts ?? [];
   const raw = parts
     .filter(p => !p.thought)
@@ -189,7 +194,7 @@ export async function onRequestPost(context) {
     .join('');
 
   if (!raw) {
-    console.error('Empty response:', JSON.stringify(result).slice(0, 300));
+    console.error('Empty response | finish:', finishReason, '| result:', JSON.stringify(result).slice(0, 400));
     return json({ error: 'AI 응답이 비어있습니다. 다시 시도해주세요.' }, 500);
   }
 
@@ -201,36 +206,58 @@ export async function onRequestPost(context) {
       .replace(/```\s*/g, '')
       .trim();
 
-    // greedy match — desc 필드 내 ] 문자에 걸리지 않도록
-    const match = cleaned.match(/\{"issues"\s*:\s*\[[\s\S]*\]\s*\}/);
-    let jsonStr = match?.[0];
-
-    // 출력이 잘린 경우 마지막 완전한 객체까지 복구 시도
-    if (!jsonStr) {
-      const start = cleaned.indexOf('{"issues"');
-      if (start !== -1) {
-        const fragment = cleaned.slice(start);
-        const lastObj = fragment.lastIndexOf('},{');
-        const candidate = lastObj !== -1
-          ? fragment.slice(0, lastObj + 1) + ']}'
-          : null;
-        if (candidate) {
-          try { jsonStr = candidate; JSON.parse(jsonStr); } catch(e) { jsonStr = null; }
-        }
-      }
-    }
-
-    if (!jsonStr) throw new Error('no json');
-    const parsed = JSON.parse(jsonStr);
-    issues = parsed.issues ?? [];
-    if (!Array.isArray(issues)) throw new Error('not array');
+    issues = extractIssues(cleaned);
+    if (!issues) throw new Error('no json');
   } catch (e) {
-    const finishReason = result.candidates?.[0]?.finishReason ?? 'unknown';
-    console.error('Parse error:', e.message, '| finish:', finishReason, '| raw:', raw.slice(0, 500));
+    console.error('Parse error | finish:', finishReason, '| raw[:600]:', raw.slice(0, 600));
     return json({ error: 'AI 응답 처리 오류입니다. 다시 시도해주세요.' }, 500);
   }
 
   return json({ issues });
+}
+
+// 다중 전략으로 JSON 추출 — Gemini가 설명 텍스트를 앞뒤로 붙이는 경우에도 대응
+function extractIssues(cleaned) {
+  // 전략 1: {"issues": [...]} 전체 greedy 매칭
+  const m1 = cleaned.match(/\{"issues"\s*:\s*\[[\s\S]*\]\s*\}/);
+  if (m1) {
+    try {
+      const p = JSON.parse(m1[0]);
+      if (Array.isArray(p.issues)) return p.issues;
+    } catch(e) {}
+  }
+
+  // 전략 2: "issues" 키 뒤의 배열만 추출
+  const m2 = cleaned.match(/"issues"\s*:\s*(\[[\s\S]*\])/);
+  if (m2) {
+    try {
+      const arr = JSON.parse(m2[1]);
+      if (Array.isArray(arr)) return arr;
+    } catch(e) {}
+  }
+
+  // 전략 3: 응답 전체를 JSON으로 파싱
+  try {
+    const p = JSON.parse(cleaned);
+    if (Array.isArray(p.issues)) return p.issues;
+    if (Array.isArray(p)) return p;
+  } catch(e) {}
+
+  // 전략 4: {"issues": 이후 잘린 경우 복구 시도
+  const start = cleaned.indexOf('{"issues"');
+  if (start !== -1) {
+    const fragment = cleaned.slice(start);
+    const lastComma = fragment.lastIndexOf('},{');
+    const candidate = lastComma !== -1
+      ? fragment.slice(0, lastComma + 1) + ']}'
+      : fragment + ']}';
+    try {
+      const p = JSON.parse(candidate);
+      if (Array.isArray(p.issues)) return p.issues;
+    } catch(e) {}
+  }
+
+  return null;
 }
 
 function json(data, status = 200) {
