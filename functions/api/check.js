@@ -122,6 +122,15 @@ ${text.slice(0, 80000)}
 `;
 
 export async function onRequestPost(context) {
+  try {
+    return await handleRequest(context);
+  } catch (e) {
+    console.error('Unhandled exception:', e?.message, e?.stack?.slice(0, 300));
+    return json({ error: '서버 오류', _debug: String(e?.message) }, 500);
+  }
+}
+
+async function handleRequest(context) {
   const { request, env } = context;
   const body = await request.json();
   const {
