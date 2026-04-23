@@ -179,17 +179,20 @@
           <span class="supp-toggle" id="itemTableToggle">▼</span>
         </div>
         <div class="supp-body" id="itemTableBody">
-          <p class="supp-hint">이원목적분류표를 텍스트로 붙여넣거나 이미지로 첨부하세요</p>
-          <textarea class="supp-textarea" id="itemTableText"
-            placeholder="문항번호·내용영역·성취기준·난이도·정답·배점..."
-            oninput="updateSuppStatus('itemTable')"></textarea>
           <div class="supp-file-row">
-            <button class="supp-file-btn" onclick="document.getElementById('itemTableImg').click()">📷 이미지 첨부</button>
+            <button class="supp-file-btn" onclick="document.getElementById('itemTableFile').click()">📄 파일 업로드</button>
+            <button class="supp-file-btn" onclick="document.getElementById('itemTableCamera').click()">📷 카메라 스캔</button>
             <span class="supp-file-name" id="itemTableImgName"></span>
             <button class="supp-clear" id="itemTableClear" onclick="clearSupp('itemTable')">✕</button>
           </div>
-          <input type="file" id="itemTableImg" accept="image/*" style="display:none"
-            onchange="handleSuppImage('itemTable', this.files[0])">
+          <input type="file" id="itemTableFile" accept=".pdf,image/*" style="display:none"
+            onchange="handleSuppFile('itemTable', this.files[0])">
+          <input type="file" id="itemTableCamera" accept="image/*" capture="environment" style="display:none"
+            onchange="handleSuppFile('itemTable', this.files[0])">
+          <p class="supp-hint" style="margin-top:8px">또는 텍스트로 붙여넣기</p>
+          <textarea class="supp-textarea" id="itemTableText"
+            placeholder="문항번호·내용영역·성취기준·난이도·정답·배점..."
+            oninput="updateSuppStatus('itemTable')"></textarea>
         </div>
       </div>
 
@@ -200,17 +203,20 @@
           <span class="supp-toggle" id="scoringTableToggle">▼</span>
         </div>
         <div class="supp-body" id="scoringTableBody">
-          <p class="supp-hint">서답형 기본답안·인정답안·부분점수 기준을 붙여넣거나 이미지로 첨부하세요</p>
-          <textarea class="supp-textarea" id="scoringTableText"
-            placeholder="문항번호·기본답안·인정답안·부분점수 기준..."
-            oninput="updateSuppStatus('scoringTable')"></textarea>
           <div class="supp-file-row">
-            <button class="supp-file-btn" onclick="document.getElementById('scoringTableImg').click()">📷 이미지 첨부</button>
+            <button class="supp-file-btn" onclick="document.getElementById('scoringTableFile').click()">📄 파일 업로드</button>
+            <button class="supp-file-btn" onclick="document.getElementById('scoringTableCamera').click()">📷 카메라 스캔</button>
             <span class="supp-file-name" id="scoringTableImgName"></span>
             <button class="supp-clear" id="scoringTableClear" onclick="clearSupp('scoringTable')">✕</button>
           </div>
-          <input type="file" id="scoringTableImg" accept="image/*" style="display:none"
-            onchange="handleSuppImage('scoringTable', this.files[0])">
+          <input type="file" id="scoringTableFile" accept=".pdf,image/*" style="display:none"
+            onchange="handleSuppFile('scoringTable', this.files[0])">
+          <input type="file" id="scoringTableCamera" accept="image/*" capture="environment" style="display:none"
+            onchange="handleSuppFile('scoringTable', this.files[0])">
+          <p class="supp-hint" style="margin-top:8px">또는 텍스트로 붙여넣기</p>
+          <textarea class="supp-textarea" id="scoringTableText"
+            placeholder="문항번호·기본답안·인정답안·부분점수 기준..."
+            oninput="updateSuppStatus('scoringTable')"></textarea>
         </div>
       </div>
 
@@ -372,17 +378,49 @@
     clearBtn.style.display = hasContent ? '' : 'none';
   }
 
-  function handleSuppImage(id, file) {
+  async function loadPdfAsImage(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
+    const canvases = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const c = document.createElement('canvas');
+      c.width = viewport.width;
+      c.height = viewport.height;
+      await page.render({ canvasContext: c.getContext('2d'), viewport }).promise;
+      canvases.push(c);
+    }
+    if (canvases.length === 1) return canvases[0].toDataURL('image/jpeg', 0.85).split(',')[1];
+    const totalW = Math.max(...canvases.map(c => c.width));
+    const totalH = canvases.reduce((s, c) => s + c.height, 0);
+    const stitched = document.createElement('canvas');
+    stitched.width = totalW;
+    stitched.height = totalH;
+    const ctx = stitched.getContext('2d');
+    let y = 0;
+    for (const c of canvases) { ctx.drawImage(c, 0, y); y += c.height; }
+    return stitched.toDataURL('image/jpeg', 0.82).split(',')[1];
+  }
+
+  async function handleSuppFile(id, file) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target.result.split(',')[1];
-      if (id === 'itemTable') itemTableImageData = base64;
-      else scoringTableImageData = base64;
-      document.getElementById(id + 'ImgName').textContent = file.name;
-      updateSuppStatus(id);
-    };
-    reader.readAsDataURL(file);
+    let base64;
+    if (file.type === 'application/pdf') {
+      base64 = await loadPdfAsImage(file);
+    } else if (file.type.startsWith('image/')) {
+      base64 = await new Promise(res => {
+        const reader = new FileReader();
+        reader.onload = e => res(e.target.result.split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+    } else {
+      return;
+    }
+    if (id === 'itemTable') itemTableImageData = base64;
+    else scoringTableImageData = base64;
+    document.getElementById(id + 'ImgName').textContent = file.name;
+    updateSuppStatus(id);
   }
 
   function clearSupp(id) {
@@ -390,8 +428,10 @@
     else scoringTableImageData = null;
     const textEl = document.getElementById(id + 'Text');
     if (textEl) textEl.value = '';
-    const imgInput = document.getElementById(id + 'Img');
-    if (imgInput) imgInput.value = '';
+    ['File', 'Camera'].forEach(suffix => {
+      const el = document.getElementById(id + suffix);
+      if (el) el.value = '';
+    });
     document.getElementById(id + 'ImgName').textContent = '';
     updateSuppStatus(id);
   }
