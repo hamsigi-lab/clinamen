@@ -75,45 +75,81 @@
     .supp-clear { padding: 1px 5px; border: none; background: none; color: #cbd5e1; cursor: pointer; font-size: 14px; flex-shrink: 0; display: none; }
     .supp-clear:hover { color: #ef4444; }
 
-    .analyze-btn { width: 100%; padding: 13px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 4px; }
+    .analyze-btn {
+      width: 100%; padding: 13px; background: #2563eb; color: #fff;
+      border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s; margin-top: 4px;
+    }
     .analyze-btn:hover { background: #1d4ed8; }
     .analyze-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+    .analyze-btn.all-pages {
+      background: #7c3aed; margin-top: 6px; font-size: 13px; padding: 10px;
+      display: none;
+    }
+    .analyze-btn.all-pages:hover:not(:disabled) { background: #6d28d9; }
+
     .privacy-note { text-align: center; font-size: 11px; color: #22c55e; margin-top: 8px; }
 
+    /* 결과 카드 */
     .result-card { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; display: none; }
     .result-card-header { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
     .result-card-header h3 { font-size: 14px; font-weight: 700; }
+    .result-actions { display: flex; gap: 6px; align-items: center; }
     .copy-btn { padding: 5px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; cursor: pointer; background: #fff; }
     .copy-btn:hover { border-color: #2563eb; color: #2563eb; }
+    .clear-result-btn { padding: 5px 10px; border: 1px solid #fecaca; border-radius: 6px; font-size: 11px; cursor: pointer; background: #fff; color: #ef4444; }
+    .clear-result-btn:hover { background: #fef2f2; }
 
+    /* 로딩 */
     .loading-state { padding: 28px 16px; text-align: center; }
     .spinner { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-state p { font-size: 13px; color: #64748b; }
+    .loading-main { font-size: 13px; color: #475569; font-weight: 600; }
+    .loading-step { font-size: 11px; color: #94a3b8; margin-top: 5px; min-height: 16px; transition: opacity 0.3s; }
 
+    /* 이전 결과 배너 */
+    .saved-banner {
+      padding: 8px 14px; background: #eff6ff; border-bottom: 1px solid #dbeafe;
+      font-size: 11px; color: #2563eb; display: none; align-items: center; justify-content: space-between;
+    }
+
+    /* 이슈 목록 */
     .issue-list { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-    .issue-item { border-radius: 10px; padding: 11px 13px; border-left: 3px solid; cursor: pointer; transition: opacity 0.15s; }
-    .issue-item:hover { opacity: 0.85; }
+    .issue-item { border-radius: 10px; padding: 11px 13px; border-left: 3px solid; cursor: pointer; transition: all 0.15s; }
+    .issue-item:hover { opacity: 0.88; transform: translateX(2px); }
     .issue-high { background: #fef2f2; border-color: #ef4444; }
     .issue-mid  { background: #fffbeb; border-color: #f59e0b; }
     .issue-low  { background: #eff6ff; border-color: #3b82f6; }
 
-    .issue-num { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 700; color: #fff; margin-right: 6px; vertical-align: middle; }
+    .issue-item-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .issue-num { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
     .issue-high .issue-num { background: #ef4444; }
     .issue-mid  .issue-num { background: #f59e0b; }
     .issue-low  .issue-num { background: #3b82f6; }
 
+    .issue-page-badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #f1f5f9; color: #64748b; flex-shrink: 0; }
+    .issue-tag { font-size: 10px; color: #94a3b8; margin-left: auto; }
+
     .issue-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
     .issue-desc  { font-size: 12px; color: #475569; line-height: 1.5; }
-    .issue-tag { font-size: 10px; color: #94a3b8; margin-bottom: 4px; }
-    .issue-quote { font-size: 11px; color: #64748b; font-style: italic; background: rgba(0,0,0,0.04); border-radius: 4px; padding: 3px 6px; margin-top: 5px; }
+    .issue-suggestion {
+      font-size: 11px; color: #15803d; background: #f0fdf4;
+      border-radius: 4px; padding: 4px 8px; margin-top: 5px;
+      font-weight: 600; line-height: 1.5;
+    }
+    .issue-quote {
+      font-size: 11px; color: #64748b; font-style: italic;
+      background: rgba(0,0,0,0.04); border-radius: 4px;
+      padding: 3px 6px; margin-top: 4px;
+    }
 
-    .summary-row { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 8px; flex-wrap: wrap; }
+    .summary-row { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .chip { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
     .chip-red   { background: #fee2e2; color: #dc2626; }
     .chip-amber { background: #fef3c7; color: #d97706; }
     .chip-blue  { background: #dbeafe; color: #2563eb; }
     .chip-green { background: #dcfce7; color: #16a34a; }
+    .page-filter { margin-left: auto; font-size: 11px; color: #64748b; }
 
     .no-issue { padding: 20px 16px; text-align: center; color: #22c55e; font-size: 14px; font-weight: 600; }
     .error-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 14px; color: #dc2626; font-size: 13px; margin-top: 12px; display: none; white-space: pre-line; line-height: 1.6; }
@@ -222,6 +258,7 @@
       </div>
 
       <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>오류 검사 시작</button>
+      <button class="analyze-btn all-pages" id="allPagesBtn" onclick="analyzeAll()" disabled>전체 페이지 검사</button>
       <div class="privacy-note">🔒 파일은 서버에 저장되지 않습니다</div>
       <div class="error-banner" id="errorBanner"></div>
     </div>
@@ -229,11 +266,18 @@
     <div class="result-card" id="resultCard">
       <div class="result-card-header">
         <h3>검사 결과</h3>
-        <button class="copy-btn" onclick="copyResult()">결과 복사</button>
+        <div class="result-actions">
+          <button class="copy-btn" onclick="copyResult()">결과 복사</button>
+          <button class="clear-result-btn" onclick="clearResult()">지우기</button>
+        </div>
+      </div>
+      <div class="saved-banner" id="savedBanner">
+        💾 이전 분석 결과
       </div>
       <div class="loading-state" id="loadingState" style="display:none">
         <div class="spinner"></div>
-        <p>AI가 시험지를 분석하는 중입니다...</p>
+        <div class="loading-main" id="loadingMain">AI가 시험지를 분석하는 중입니다...</div>
+        <div class="loading-step" id="loadingStep"></div>
       </div>
       <div id="resultContent"></div>
     </div>
@@ -251,6 +295,15 @@
   let currentIssues = [];
   let itemTableImageData = null;
   let scoringTableImageData = null;
+  let loadingTimer = null;
+
+  const LOADING_STEPS = [
+    '문항 번호와 배점을 확인하는 중...',
+    '오탈자·맞춤법을 검사하는 중...',
+    '서답형 기준을 검토하는 중...',
+    '오류 위치를 파악하는 중...',
+    '결과를 정리하는 중...',
+  ];
 
   // 드래그 앤 드롭
   const zone = document.getElementById('uploadZone');
@@ -263,11 +316,24 @@
     if (file) handleFile(file);
   });
 
+  // 페이지 로드 시 저장된 결과 복원
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = loadFromStorage();
+    if (saved?.issues?.length) {
+      currentIssues = saved.issues;
+      const resultCard = document.getElementById('resultCard');
+      const resultContent = document.getElementById('resultContent');
+      const savedBanner = document.getElementById('savedBanner');
+      const isMulti = currentIssues.some(i => i.pageNum);
+      resultCard.style.display = 'block';
+      savedBanner.style.display = 'flex';
+      renderResult(currentIssues, resultContent, isMulti);
+    }
+  });
+
   async function handleFile(file) {
     if (!file) return;
-    const errorBanner = document.getElementById('errorBanner');
-    errorBanner.style.display = 'none';
-
+    document.getElementById('errorBanner').style.display = 'none';
     document.getElementById('docTitle').textContent = file.name;
     document.getElementById('uploadZone').style.display = 'none';
     canvasWrap.style.display = 'block';
@@ -290,9 +356,11 @@
 
     if (totalPages > 1) {
       document.getElementById('pageNav').style.display = 'flex';
+      document.getElementById('allPagesBtn').style.display = 'block';
     }
     await renderPage(currentPage);
     document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('allPagesBtn').disabled = false;
   }
 
   async function loadImage(file) {
@@ -306,15 +374,8 @@
       const scale = Math.min(1, maxW / img.width);
       canvas.width = img.width * scale;
       canvas.height = img.height * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      const overlay = document.getElementById('overlayCanvas');
-      overlay.width = canvas.width;
-      overlay.height = canvas.height;
-      overlay.style.width = canvas.width + 'px';
-      overlay.style.height = canvas.height + 'px';
-
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      syncOverlay(canvas);
       pageImages[1] = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
       document.getElementById('analyzeBtn').disabled = false;
     };
@@ -331,19 +392,21 @@
     const canvas = document.getElementById('docCanvas');
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    const ctx = canvas.getContext('2d');
-    await page.render({ canvasContext: ctx, viewport }).promise;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
+    syncOverlay(canvas);
+    pageImages[pageNum] = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    updatePageNav();
+    clearOverlay();
+    if (currentIssues.length) drawAnnotations(getPageIssues(pageNum));
+  }
+
+  function syncOverlay(canvas) {
     const overlay = document.getElementById('overlayCanvas');
     overlay.width = canvas.width;
     overlay.height = canvas.height;
     overlay.style.width = canvas.width + 'px';
     overlay.style.height = canvas.height + 'px';
-
-    pageImages[pageNum] = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-    updatePageNav();
-    clearOverlay();
-    if (currentIssues.length) drawAnnotations(currentIssues);
   }
 
   function changePage(delta) {
@@ -359,7 +422,11 @@
     document.getElementById('nextBtn').disabled = currentPage >= totalPages;
   }
 
-  // 보조 자료 섹션 토글
+  function getPageIssues(pageNum) {
+    return currentIssues.filter(i => !i.pageNum || i.pageNum === pageNum);
+  }
+
+  // 보조 자료
   function toggleSupp(id) {
     const body = document.getElementById(id + 'Body');
     const toggle = document.getElementById(id + 'Toggle');
@@ -387,8 +454,7 @@
       const page = await pdf.getPage(i);
       const viewport = page.getViewport({ scale: 1.5 });
       const c = document.createElement('canvas');
-      c.width = viewport.width;
-      c.height = viewport.height;
+      c.width = viewport.width; c.height = viewport.height;
       await page.render({ canvasContext: c.getContext('2d'), viewport }).promise;
       canvases.push(c);
     }
@@ -396,8 +462,7 @@
     const totalW = Math.max(...canvases.map(c => c.width));
     const totalH = canvases.reduce((s, c) => s + c.height, 0);
     const stitched = document.createElement('canvas');
-    stitched.width = totalW;
-    stitched.height = totalH;
+    stitched.width = totalW; stitched.height = totalH;
     const ctx = stitched.getContext('2d');
     let y = 0;
     for (const c of canvases) { ctx.drawImage(c, 0, y); y += c.height; }
@@ -415,9 +480,7 @@
         reader.onload = e => res(e.target.result.split(',')[1]);
         reader.readAsDataURL(file);
       });
-    } else {
-      return;
-    }
+    } else { return; }
     if (id === 'itemTable') itemTableImageData = base64;
     else scoringTableImageData = base64;
     document.getElementById(id + 'ImgName').textContent = file.name;
@@ -429,68 +492,138 @@
     else scoringTableImageData = null;
     const textEl = document.getElementById(id + 'Text');
     if (textEl) textEl.value = '';
-    ['File', 'Camera'].forEach(suffix => {
-      const el = document.getElementById(id + suffix);
-      if (el) el.value = '';
-    });
+    ['File','Camera'].forEach(s => { const el = document.getElementById(id + s); if (el) el.value = ''; });
     document.getElementById(id + 'ImgName').textContent = '';
     updateSuppStatus(id);
   }
 
+  // 로딩 애니메이션
+  function startLoadingAnim(label) {
+    let step = 0;
+    const mainEl = document.getElementById('loadingMain');
+    const stepEl = document.getElementById('loadingStep');
+    mainEl.textContent = label || 'AI가 시험지를 분석하는 중입니다...';
+    stepEl.textContent = LOADING_STEPS[0];
+    loadingTimer = setInterval(() => {
+      step = (step + 1) % LOADING_STEPS.length;
+      stepEl.textContent = LOADING_STEPS[step];
+    }, 3500);
+  }
+
+  function stopLoadingAnim() {
+    if (loadingTimer) { clearInterval(loadingTimer); loadingTimer = null; }
+    document.getElementById('loadingStep').textContent = '';
+  }
+
+  function buildRequestBody(imageData, pageOverride) {
+    const itemTableText = document.getElementById('itemTableText').value.trim();
+    const scoringTableText = document.getElementById('scoringTableText').value.trim();
+    return {
+      type: 'exam',
+      imageData,
+      schoolType: document.getElementById('schoolType').value,
+      subject: document.getElementById('subject').value,
+      totalScore: document.getElementById('totalScore').value,
+      itemTableText: itemTableText || undefined,
+      itemTableImage: pageOverride ? undefined : (itemTableImageData || undefined),
+      scoringTableText: pageOverride ? undefined : (scoringTableText || undefined),
+      scoringTableImage: pageOverride ? undefined : (scoringTableImageData || undefined),
+    };
+  }
+
+  // 현재 페이지 분석
   async function analyze() {
     const imageData = pageImages[currentPage];
     if (!imageData) { showError('시험지를 먼저 업로드해주세요.'); return; }
 
-    const btn = document.getElementById('analyzeBtn');
-    const resultCard = document.getElementById('resultCard');
-    const loadingState = document.getElementById('loadingState');
-    const resultContent = document.getElementById('resultContent');
-    const errorBanner = document.getElementById('errorBanner');
-
-    errorBanner.style.display = 'none';
-    btn.disabled = true;
-    btn.textContent = '분석 중...';
-    resultCard.style.display = 'block';
-    loadingState.style.display = 'block';
-    resultContent.innerHTML = '';
-    clearOverlay();
-
-    const itemTableText = document.getElementById('itemTableText').value.trim();
-    const scoringTableText = document.getElementById('scoringTableText').value.trim();
+    setAnalyzing(true);
+    document.getElementById('savedBanner').style.display = 'none';
 
     try {
+      startLoadingAnim();
       const res = await fetch('/api/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'exam',
-          imageData,
-          schoolType: document.getElementById('schoolType').value,
-          subject: document.getElementById('subject').value,
-          totalScore: document.getElementById('totalScore').value,
-          itemTableText: itemTableText || undefined,
-          itemTableImage: itemTableImageData || undefined,
-          scoringTableText: scoringTableText || undefined,
-          scoringTableImage: scoringTableImageData || undefined,
-        }),
+        body: JSON.stringify(buildRequestBody(imageData)),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '오류가 발생했습니다.');
 
-      loadingState.style.display = 'none';
+      stopLoadingAnim();
       currentIssues = data.issues || [];
-      renderResult(currentIssues, resultContent);
-      drawAnnotations(currentIssues);
+      finishAnalysis(currentIssues, false);
     } catch(e) {
-      loadingState.style.display = 'none';
-      resultCard.style.display = 'none';
+      stopLoadingAnim();
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('resultCard').style.display = 'none';
       showError(e.message);
     } finally {
-      btn.disabled = false;
-      btn.textContent = '오류 검사 시작';
+      setAnalyzing(false);
     }
   }
 
+  // 전체 페이지 분석
+  async function analyzeAll() {
+    if (!pdfDoc) return;
+
+    setAnalyzing(true);
+    document.getElementById('savedBanner').style.display = 'none';
+
+    const allIssues = [];
+    try {
+      for (let p = 1; p <= totalPages; p++) {
+        if (!pageImages[p]) { currentPage = p; await renderPage(p); }
+        startLoadingAnim(`${p} / ${totalPages} 페이지 분석 중...`);
+
+        const res = await fetch('/api/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildRequestBody(pageImages[p], p > 1)),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(`${p}페이지 오류: ${data.error || '알 수 없는 오류'}`);
+
+        (data.issues || []).forEach(issue => allIssues.push({ ...issue, pageNum: p }));
+      }
+
+      stopLoadingAnim();
+      currentIssues = allIssues;
+
+      // 1페이지로 이동
+      if (currentPage !== 1) { currentPage = 1; await renderPage(1); }
+      finishAnalysis(allIssues, true);
+    } catch(e) {
+      stopLoadingAnim();
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('resultCard').style.display = 'none';
+      showError(e.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  function setAnalyzing(on) {
+    const btn = document.getElementById('analyzeBtn');
+    const allBtn = document.getElementById('allPagesBtn');
+    btn.disabled = on;
+    allBtn.disabled = on;
+    btn.textContent = on ? '분석 중...' : '오류 검사 시작';
+    if (on) {
+      document.getElementById('resultCard').style.display = 'block';
+      document.getElementById('loadingState').style.display = 'block';
+      document.getElementById('resultContent').innerHTML = '';
+      clearOverlay();
+    }
+  }
+
+  function finishAnalysis(issues, isMulti) {
+    document.getElementById('loadingState').style.display = 'none';
+    renderResult(issues, document.getElementById('resultContent'), isMulti);
+    drawAnnotations(getPageIssues(currentPage));
+    saveToStorage(issues);
+  }
+
+  // 어노테이션
   const ANNOT_COLORS = { 높음: '#ef4444', 중간: '#f59e0b', 낮음: '#3b82f6', 정보: '#64748b' };
   const ANNOT_FILLS  = { 높음: 'rgba(239,68,68,0.13)', 중간: 'rgba(245,158,11,0.13)', 낮음: 'rgba(59,130,246,0.13)', 정보: 'rgba(100,116,135,0.10)' };
 
@@ -509,35 +642,27 @@
       const h = ((bb.y_max - bb.y_min) / 1000) * H;
       const color = ANNOT_COLORS[issue.level] || '#3b82f6';
 
-      // Highlight fill
       ctx.fillStyle = ANNOT_FILLS[issue.level] || 'rgba(59,130,246,0.13)';
       ctx.fillRect(x, y, w, h);
-
-      // Colored border
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, w, h);
 
-      // Number badge
       const br = 11;
       const bx = x + br, by2 = Math.max(br, y - br);
       ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(bx, by2, br, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, by2, br, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(i + 1, bx, by2);
 
-      // Annotation note
       drawCallout(ctx, issue, x, y, w, h, color, W, H);
     });
   }
 
   function drawCallout(ctx, issue, bx, by, bw, bh, color, W, H) {
-    const NW = 185, PAD = 8, TFS = 12, DFS = 10.5, QFS = 10, LHT = 16, LHD = 14, LHQ = 13;
+    const NW = 185, PAD = 8, TFS = 12, DFS = 10.5, SFS = 10.5, QFS = 10, LHT = 16, LHD = 14, LHQ = 13;
 
     ctx.font = `bold ${TFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
     const tLines = wrapCanvasText(ctx, issue.title || '', NW - PAD * 2 - 6);
@@ -547,17 +672,21 @@
     const dLines = dAll.slice(0, 2);
     const hasMore = dAll.length > 2;
 
+    const sText = issue.suggestion ? `→ ${issue.suggestion}` : null;
+    ctx.font = `${SFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
+    const sLines = sText ? wrapCanvasText(ctx, sText, NW - PAD * 2 - 6).slice(0, 2) : [];
+
     const qText = issue.quote ? `"${issue.quote}"` : null;
     ctx.font = `italic ${QFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
-    const qLines = qText ? wrapCanvasText(ctx, qText, NW - PAD * 2 - 6).slice(0, 2) : [];
+    const qLines = qText ? wrapCanvasText(ctx, qText, NW - PAD * 2 - 6).slice(0, 1) : [];
 
     const NH = PAD
       + tLines.length * LHT + 4
       + dLines.length * LHD + (hasMore ? LHD : 0)
+      + (sLines.length ? 4 + sLines.length * LHD : 0)
       + (qLines.length ? 4 + qLines.length * LHQ : 0)
       + PAD;
 
-    // Position: right side, fall back to left if no space
     let nx = bx + bw + 10;
     if (nx + NW > W - 4) nx = bx - NW - 10;
     if (nx < 2) nx = 2;
@@ -565,58 +694,47 @@
     if (ny + NH > H - 4) ny = H - NH - 4;
     if (ny < 2) ny = 2;
 
-    // Dashed connector line
     ctx.save();
     ctx.setLineDash([4, 3]);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.globalAlpha = 0.45;
     ctx.beginPath();
     ctx.moveTo(bx + bw < nx ? bx + bw : bx, by + bh / 2);
-    ctx.lineTo(bx + bw < nx ? nx : nx + NW,  ny + NH / 2);
+    ctx.lineTo(bx + bw < nx ? nx : nx + NW, ny + NH / 2);
     ctx.stroke();
     ctx.restore();
 
-    // Drop shadow
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.18)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
-
-    // White background
+    ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
     ctx.fillStyle = '#fff';
-    roundRect(ctx, nx, ny, NW, NH, 6);
-    ctx.fill();
+    roundRect(ctx, nx, ny, NW, NH, 6); ctx.fill();
     ctx.restore();
 
-    // Left accent bar
     ctx.fillStyle = color;
-    roundRect(ctx, nx, ny, 4, NH, [6, 0, 0, 6]);
-    ctx.fill();
+    roundRect(ctx, nx, ny, 4, NH, [6, 0, 0, 6]); ctx.fill();
 
-    // Title
     ctx.font = `bold ${TFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
-    ctx.fillStyle = '#1e293b';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#1e293b'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     let ty = ny + PAD;
     tLines.forEach(line => { ctx.fillText(line, nx + PAD + 5, ty); ty += LHT; });
 
-    // Desc
     ty += 4;
     ctx.font = `${DFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
     ctx.fillStyle = '#64748b';
     dLines.forEach(line => { ctx.fillText(line, nx + PAD + 5, ty); ty += LHD; });
-    if (hasMore) {
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillText('↗ 오른쪽 패널에서 전체 확인', nx + PAD + 5, ty);
-      ty += LHD;
+    if (hasMore) { ctx.fillStyle = '#94a3b8'; ctx.fillText('↗ 오른쪽 패널에서 전체 확인', nx + PAD + 5, ty); ty += LHD; }
+
+    if (sLines.length) {
+      ty += 4;
+      ctx.fillStyle = 'rgba(21,128,61,0.08)';
+      ctx.fillRect(nx + PAD + 3, ty - 2, NW - PAD * 2 - 3, sLines.length * LHD + 4);
+      ctx.font = `bold ${SFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
+      ctx.fillStyle = '#15803d';
+      sLines.forEach(line => { ctx.fillText(line, nx + PAD + 6, ty); ty += LHD; });
     }
 
-    // Quote (원문 구절)
     if (qLines.length) {
       ty += 4;
-      ctx.fillStyle = 'rgba(0,0,0,0.06)';
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
       ctx.fillRect(nx + PAD + 3, ty - 2, NW - PAD * 2 - 3, qLines.length * LHQ + 4);
       ctx.font = `italic ${QFS}px -apple-system,"Apple SD Gothic Neo",sans-serif`;
       ctx.fillStyle = '#475569';
@@ -625,8 +743,7 @@
   }
 
   function wrapCanvasText(ctx, text, maxW) {
-    const lines = [];
-    let cur = '';
+    const lines = []; let cur = '';
     for (const ch of text) {
       const test = cur + ch;
       if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = ch; }
@@ -639,8 +756,7 @@
   function roundRect(ctx, x, y, w, h, r) {
     const [tl, tr, br, bl] = typeof r === 'number' ? [r, r, r, r] : r;
     ctx.beginPath();
-    ctx.moveTo(x + tl, y);
-    ctx.lineTo(x + w - tr, y);
+    ctx.moveTo(x + tl, y); ctx.lineTo(x + w - tr, y);
     ctx.quadraticCurveTo(x + w, y, x + w, y + tr);
     ctx.lineTo(x + w, y + h - br);
     ctx.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
@@ -651,23 +767,33 @@
     ctx.closePath();
   }
 
-  function highlightIssue(index) {
+  async function highlightIssue(index) {
     const issue = currentIssues[index];
-    if (!issue?.boundingBox) return;
+    if (!issue) return;
+
+    // 다른 페이지면 먼저 이동
+    if (issue.pageNum && issue.pageNum !== currentPage) {
+      currentPage = issue.pageNum;
+      await renderPage(currentPage);
+    }
+
+    if (!issue.boundingBox) return;
+
     const overlay = document.getElementById('overlayCanvas');
-    const canvasWrap = document.getElementById('canvasWrap');
     const bb = issue.boundingBox;
     const y = (bb.y_min / 1000) * overlay.height;
     canvasWrap.scrollTo({ top: y - 60, behavior: 'smooth' });
-    drawAnnotations(currentIssues);
+
+    const pageIssues = getPageIssues(currentPage);
+    drawAnnotations(pageIssues);
 
     const ctx = overlay.getContext('2d');
     const x = (bb.x_min / 1000) * overlay.width;
     const w = ((bb.x_max - bb.x_min) / 1000) * overlay.width;
     const h = ((bb.y_max - bb.y_min) / 1000) * overlay.height;
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+    ctx.fillStyle = 'rgba(239,68,68,0.22)';
     ctx.fillRect(x, y, w, h);
-    setTimeout(() => drawAnnotations(currentIssues), 600);
+    setTimeout(() => drawAnnotations(pageIssues), 600);
   }
 
   function clearOverlay() {
@@ -675,44 +801,76 @@
     overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
   }
 
-  function renderResult(issues, container) {
+  function renderResult(issues, container, isMulti = false) {
     if (!issues.length) {
       container.innerHTML = '<div class="no-issue">✅ 오류가 발견되지 않았습니다</div>';
       return;
     }
-    const high  = issues.filter(i => i.level === '높음').length;
-    const mid   = issues.filter(i => i.level === '중간').length;
-    const low   = issues.filter(i => ['낮음','정보'].includes(i.level)).length;
-    const levelCls = { 높음: 'high', '중간': 'mid', 낮음: 'low', 정보: 'low' };
+    const high = issues.filter(i => i.level === '높음').length;
+    const mid  = issues.filter(i => i.level === '중간').length;
+    const low  = issues.filter(i => ['낮음','정보'].includes(i.level)).length;
+    const levelCls = { 높음: 'high', 중간: 'mid', 낮음: 'low', 정보: 'low' };
 
     container.innerHTML =
       `<div class="summary-row">
         ${high ? `<span class="chip chip-red">⚠ 높음 ${high}</span>` : ''}
         ${mid  ? `<span class="chip chip-amber">! 중간 ${mid}</span>` : ''}
         ${low  ? `<span class="chip chip-blue">ℹ 참고 ${low}</span>` : ''}
+        ${isMulti ? `<span class="page-filter">${totalPages}페이지 전체</span>` : ''}
       </div>
       <div class="issue-list">
-        ${issues.map((issue, i) => `
-          <div class="issue-item issue-${levelCls[issue.level]||'low'}" onclick="highlightIssue(${i})">
-            <div class="issue-tag">${issue.category}</div>
-            <div class="issue-title"><span class="issue-num">${i+1}</span>${escapeHtml(issue.title)}</div>
+        ${issues.map((issue, i) => {
+          const cls = levelCls[issue.level] || 'low';
+          return `<div class="issue-item issue-${cls}" onclick="highlightIssue(${i})">
+            <div class="issue-item-top">
+              <span class="issue-num">${i + 1}</span>
+              ${isMulti && issue.pageNum ? `<span class="issue-page-badge">${issue.pageNum}p</span>` : ''}
+              <span class="issue-tag">${escapeHtml(issue.category)}</span>
+            </div>
+            <div class="issue-title">${escapeHtml(issue.title)}</div>
             <div class="issue-desc">${escapeHtml(issue.desc)}</div>
+            ${issue.suggestion ? `<div class="issue-suggestion">→ ${escapeHtml(issue.suggestion)}</div>` : ''}
             ${issue.quote ? `<div class="issue-quote">"${escapeHtml(issue.quote)}"</div>` : ''}
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>`;
   }
 
+  function clearResult() {
+    currentIssues = [];
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('savedBanner').style.display = 'none';
+    clearOverlay();
+    localStorage.removeItem('clinamen_exam_result');
+  }
+
   function copyResult() {
-    const text = currentIssues.map((issue, i) =>
-      `[${i+1}] ${issue.level} · ${issue.category}\n${issue.title}\n${issue.desc}`
-    ).join('\n\n');
+    const text = currentIssues.map((issue, i) => {
+      let s = `[${i+1}] ${issue.level} · ${issue.category}\n${issue.title}\n${issue.desc}`;
+      if (issue.suggestion) s += `\n→ ${issue.suggestion}`;
+      if (issue.quote) s += `\n원문: "${issue.quote}"`;
+      return s;
+    }).join('\n\n');
     navigator.clipboard.writeText(text);
+  }
+
+  function saveToStorage(issues) {
+    try {
+      localStorage.setItem('clinamen_exam_result', JSON.stringify({ issues, ts: Date.now() }));
+    } catch(e) {}
+  }
+
+  function loadFromStorage() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('clinamen_exam_result'));
+      if (saved && Date.now() - saved.ts < 24 * 3600 * 1000) return saved;
+    } catch(e) {}
+    return null;
   }
 
   function showError(msg) {
     const el = document.getElementById('errorBanner');
-    el.textContent = msg;
-    el.style.display = 'block';
+    el.textContent = msg; el.style.display = 'block';
   }
 
   function escapeHtml(str) {
